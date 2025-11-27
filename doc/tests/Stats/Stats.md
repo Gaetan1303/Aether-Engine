@@ -608,3 +608,16 @@ func TestStats_Tank(t *testing.T) {
     assert.Equal(t, 30, stats.RES())
 }
 ```
+
+### Résultats obtenus : 
+Tous les tests unitaires pour le Value Object Stats passent avec succès :
+
+TestNewStats_InvalidBaseStats : Valide les invariants métier (HP > 0, ATK >= 1).
+TestStats_TakeDamage_Invariant : Vérifie la gestion des dégâts, le plancher à 0 et l’état KO.
+TestStats_Heal_Invariant : Vérifie la gestion des soins, le plafond à MaxHP.
+TestStats_ConsumeMP : Vérifie la consommation de MP, la gestion des erreurs et l’invariance du MP en cas d’échec.
+Analyse :
+
+La struct Stats est robuste, respecte les invariants et les comportements attendus.
+Les tests couvrent les cas limites et les usages courants.
+Le code est prêt pour une utilisation fiable dans le moteur de jeu.

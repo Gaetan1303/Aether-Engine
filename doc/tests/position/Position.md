@@ -328,3 +328,18 @@ func TestPosition_Immutability(t *testing.T) {
     assert.Equal(t, y, p1.Y())
 }
 ```
+
+
+### Résultats obtenus
+Tous les tests unitaires pour le Value Object Position passent avec succès :
+
+TestNewPosition3D_InvalidCoordinates : Vérifie que la création d’une position avec des coordonnées négatives échoue bien (validation métier OK).
+TestPosition3D_Equals : Vérifie l’égalité stricte entre deux positions (comportement de Value Object respecté).
+TestPosition3D_DistanceManhattan : Calcule correctement la distance de Manhattan entre deux positions (logique spatiale fiable).
+TestPosition3D_DistanceChebyshev : Calcule correctement la distance de Chebyshev (utile pour les déplacements sur grille).
+TestPosition3D_InBounds : Vérifie que la position est bien dans les limites spécifiées (sécurité sur la grille).
+Analyse :
+
+La couverture des cas limites et des invariants est excellente.
+Les méthodes sont robustes, typées et respectent le DDD.
+Le code est prêt à être utilisé comme brique de base fiable pour le moteur de jeu.
