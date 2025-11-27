@@ -1,4 +1,4 @@
-# Diagramme de classe complet – Tactical RPG (Mermaid)
+# Diagramme de classe complet – Tactical RPG
 
 ```mermaid
 classDiagram
