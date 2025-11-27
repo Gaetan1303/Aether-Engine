@@ -150,22 +150,33 @@ go test ./...
 
 ---
 
-## Structure du projet (exemple)
+## Structure du projet (prévisionnelle)
 
-```
 server/
-├── main.go                # Point d'entrée Gin
-├── handlers/              # Handlers HTTP (routes)
-├── models/                # Modèles métier (entités, agrégats)
-├── services/              # Logique métier
-├── repository/            # Accès BDD
-├── middleware/            # Middlewares Gin
-├── config/                # Chargement config/env
-├── tests/                 # Tests unitaires et d'intégration
-├── go.mod
-└── README.md
-```
-
+├── cmd/
+│   └── server/
+│       └── main.go              # Point d'entrée
+├── internal/
+│   ├── combat/                  # Bounded Context Combat
+│   │   ├── domain/              # Agrégats, Entities, Value Objects
+│   │   │   ├── battle.go
+│   │   │   ├── unit.go
+│   │   │   └── skill.go
+│   │   ├── application/         # Use cases
+│   │   │   └── battle_service.go
+│   │   ├── infrastructure/      # Repositories, Adapters
+│   │   │   ├── battle_repository.go
+│   │   │   └── event_publisher.go
+│   │   └── presentation/        # Handlers HTTP
+│   │       └── battle_handler.go
+│   ├── character/               # Bounded Context Personnage
+│   ├── quest/
+│   └── shared/                  # Code partagé
+│       ├── domain/
+│       └── infrastructure/
+├── pkg/                         # Code public réutilisable
+├── tests/
+└── go.mod
 ---
 
 ## API Documentation
