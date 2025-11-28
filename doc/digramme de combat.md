@@ -11,51 +11,86 @@ sequenceDiagram
     participant BattleGrid
     participant StatusCollection
 
-    %% =========================
     %% INITIALISATION
-    %% =========================
     Player ->> Battle: Start()
     Battle ->> CombatStateMachine: SetState(Initializing)
     CombatStateMachine -->> Battle: State=Initializing
     Battle ->> Battle: SetupTeams()
     Battle ->> Battle: SetupGrid()
     Battle ->> Battle: InitializeTurnOrder()
-    CombatStateMachine ->> Battle: SetState(TurnBegin)
+    
+    alt Validation OK
+        CombatStateMachine ->> Battle: SetState(TurnBegin)
+    else Validation failed
+        CombatStateMachine ->> Battle: SetState(Failed)
+        Battle ->> Player: NotifyError("Invalid setup")
+        note right of Battle: Combat non initialisé, sortie de séquence
+    end
 
-    %% =========================
     %% BOUCLE DE TOUR
-    %% =========================
     loop Chaque tour
         Battle ->> Unit: GetCurrentUnit()
         CombatStateMachine ->> Battle: SetState(ActionSelection)
-        Player ->> Battle: SelectAction(BattleAction)
-        Battle ->> Battle: ValidateAction(BattleAction)
-        Battle ->> CombatStateMachine: SetState(ActionResolve)
 
-        %% Appliquer status de début de tour
+        alt Player input
+            Player ->> Battle: SelectAction(BattleAction)
+            Battle ->> Battle: ValidateAction(BattleAction)
+            alt Validation OK
+                Battle ->> CombatStateMachine: SetState(ActionResolve)
+            else Validation failed
+                Battle ->> Player: Notify("Invalid action")
+                note right of Battle: Retour à ActionSelection
+                CombatStateMachine ->> Battle: SetState(ActionSelection)
+            end
+        else Timeout / AI
+            Battle ->> Unit: AutoSelectAction()
+            CombatStateMachine ->> Battle: SetState(ActionResolve)
+        end
+
+        %% Début de tour : Status
         Unit ->> StatusCollection: OnTurnStart(Unit)
-        StatusCollection -->> Unit: Modifie état
+        opt Status modifie Unit
+            StatusCollection -->> Unit: Updated stats
+        end
 
         %% Résolution de l'action
-        Battle ->> BattleGrid: CheckMovement(Unit, TargetPos)
-        Battle ->> TargetUnit: ApplyDamage(Damage)
-        TargetUnit ->> StatusCollection: OnIncomingDamage(Damage, Source)
-        Unit ->> StatusCollection: OnOutgoingDamage(Damage, Target)
-        Battle ->> TargetUnit: ApplyStatus(Status)
+        alt Move action
+            Battle ->> BattleGrid: CheckMovement(Unit, TargetPos)
+            alt Position valide
+                Battle ->> Unit: Move(TargetPos)
+            else Obstacle / Invalid
+                Battle ->> Player: Notify("Movement blocked")
+                note right of Battle: Retour à ActionSelection
+                CombatStateMachine ->> Battle: SetState(ActionSelection)
+            end
+        else Skill / Attack
+            Battle ->> TargetUnit: ApplyDamage(Damage)
+            TargetUnit ->> StatusCollection: OnIncomingDamage(Damage, Source)
+            StatusCollection -->> TargetUnit: Modified Damage
+            Unit ->> StatusCollection: OnOutgoingDamage(Damage, Target)
+            StatusCollection -->> Unit: Modified Damage
+            Unit ->> TargetUnit: ApplyStatus(Status)
+        else Wait / Skip
+            Unit ->> Unit: SkipTurn()
+        end
 
         %% Décrémente les status
         Unit ->> StatusCollection: DecrementAll()
-        StatusCollection -->> Unit: Retire expirés
+        StatusCollection -->> Unit: Remove expired
 
-        %% Fin de tour du joueur
+        %% Fin de tour
         CombatStateMachine ->> Battle: SetState(TurnEnd)
         Battle ->> Battle: UpdateCurrentUnit()
         Battle ->> CombatStateMachine: NextTurn()
     end
 
-    %% =========================
     %% FIN DE COMBAT
-    %% =========================
-    CombatStateMachine ->> Battle: SetState(Finished)
-    Battle ->> Player: NotifyCombatEnd()
+    alt Victoire / Défaite
+        CombatStateMachine ->> Battle: SetState(Finished)
+        Battle ->> Player: NotifyCombatEnd()
+    else Erreur critique
+        Battle ->> Player: NotifyError("Critical error")
+        note right of Battle: Sortie de combat due à erreur critique
+    end
+
 ```

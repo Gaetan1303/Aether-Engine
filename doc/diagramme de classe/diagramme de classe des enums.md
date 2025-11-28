@@ -1,101 +1,90 @@
 ```mermaid
-
 classDiagram
+direction LR
 
-%% ===========================
-%% ENUMS / VALUE OBJECT ENUM-LIKE
-%% ===========================
+%% =========================
+%% ENUMS DU DOMAINE
+%% =========================
 
 class BattleState {
     <<enum>>
-    +Idle
-    +Initializing
-    +TurnBegin
-    +ActionSelection
-    +ActionResolve
-    +TurnEnd
-    +Finished
-}
-
-class TeamID {
-    <<value object>>
-    -value: int
-    +New(id int) (TeamID, error)
-    +Value() int
-}
-
-class UnitID {
-    <<value object>>
-    -value: int
-    +New(id int) (UnitID, error)
-    +Value() int
-    +Equals(UnitID) bool
-}
-
-class SkillID {
-    <<value object>>
-    -value: int
-    +New(id int) (SkillID, error)
-    +Value() int
-}
-
-class DamageType {
-    <<enum>>
-    +Physical
-    +Magical
-    +TrueDamage
-}
-
-class SkillType {
-    <<enum>>
-    +Attack
-    +Heal
-    +Buff
-    +Debuff
-    +Movement
-}
-
-class Direction {
-    <<enum>>
-    +North
-    +South
-    +East
-    +West
-}
-
-class ActionType {
-    <<enum>>
-    +Move
-    +Skill
-    +Wait
+    Idle
+    Initializing
+    TurnBegin
+    ActionSelection
+    ActionResolve
+    TurnEnd
+    Finished
 }
 
 class TurnPhase {
     <<enum>>
-    +Begin
-    +Main
-    +End
+    Begin
+    Main
+    End
+}
+
+class ActionType {
+    <<enum>>
+    Move
+    Skill
+    Wait
+}
+
+class SkillType {
+    <<enum>>
+    Attack
+    Heal
+    Buff
+    Debuff
+    Movement
+}
+
+class DamageType {
+    <<enum>>
+    Physical
+    Magical
+    TrueDamage
+}
+
+class Direction {
+    <<enum>>
+    North
+    South
+    East
+    West
 }
 
 class GridCellType {
     <<enum>>
-    +Empty
-    +Obstacle
-    +Hazard
+    Empty
+    Obstacle
+    Hazard
 }
 
-%% ===========================
-%% RELATIONS
-%% ===========================
+class StatusType {
+    <<enum>>
+    Poison
+    Haste
+    Shield
+    Silence
+    Slow
+    Regen
+    Stun
+    Blind
+    Protect
+    Berserk
+}
 
-TeamID --> UnitID : identifie les unités
-UnitID --> SkillID : utilise
-SkillID --> SkillType : catégorisé par
-SkillID --> DamageType : type de dégât
+%% =========================
+%% RELATIONS CONCEPTUELLES ENTRE ENUMS
+%% =========================
 
-BattleState --> TurnPhase : organise
-ActionType --> SkillType : dépend si Action=Skill
+ActionType --> SkillType : "si Action=Skill, correspond à"
+TurnPhase --> BattleState : "définit le moment dans le cycle"
+DamageType --> SkillType : "types de dégâts applicables aux skills"
+StatusType --> ActionType : "peut restreindre ou modifier certaines actions"
+Direction --> GridCellType : "déplace vers ou interagit avec"
 
-Direction --> Position3D : "déplace vers"
-GridCellType --> Position3D : contenu
+
 ```
