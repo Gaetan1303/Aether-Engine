@@ -9,7 +9,7 @@
 
 ---
 
-##  Vision du projet
+## Vision du projet
 
 ### Qu'est-ce que le Serveur Fabric ?
 
@@ -22,15 +22,15 @@ Dans l'architecture MMO de Fantasy Tower, le **Fabric** est le service responsab
 5. **Publication d'événements** vers les autres services (Kafka/Event Bus)
 
 Le Fabric **ne gère pas** :
-- ❌ L'interface utilisateur (client Angular séparé)
-- ❌ La synchronisation temps réel clients (API Observer)
-- ❌ Le chat et les échanges (API Chat)
-- ❌ L'authentification (API Gateway)
-- ❌ Les analytics (API Big Data)
+- L'interface utilisateur (client Angular séparé)
+- La synchronisation temps réel clients (API Observer)
+- Le chat et les échanges (API Chat)
+- L'authentification (API Gateway)
+- Les analytics (API Big Data)
 
 ---
 
-##  Architecture & Principes
+## Architecture & Principes
 
 ### Domain-Driven Design (DDD)
 
@@ -62,9 +62,9 @@ Command (POST /actions) → Agrégat → Événements → Event Store (PostgreSQ
 
 ---
 
-##  État actuel du projet
+## État actuel du projet
 
-###  Ce qui est fait
+### Ce qui est fait
 
 | Composant | État | Documentation |
 |-----------|------|---------------|
@@ -81,7 +81,7 @@ Command (POST /actions) → Agrégat → Événements → Event Store (PostgreSQ
 | **Hooks Fabric** |  Documentés | [`doc/tour_unite_hooks_integres.md`](doc/tour_unite_hooks_integres.md) |
 | **40+ Types d'événements** |  Spécifiés | [`doc/matrice_evenements.md`](doc/matrice_evenements.md) |
 
-###  En cours / À faire (Phase actuelle : P1 → P2)
+### En cours / À faire (Phase actuelle : P1 → P2)
 
 | Composant | Priorité | Effort estimé |
 |-----------|----------|---------------|
@@ -96,11 +96,11 @@ Command (POST /actions) → Agrégat → Événements → Event Store (PostgreSQ
 
 ---
 
-##  Responsabilités du Fabric
+## Responsabilités du Fabric
 
 
 
-###  Ce que fait le Fabric
+### Ce que fait le Fabric
 
 1. **Validation déterministe des actions**
    - Portée de compétence (Manhattan/Euclidienne 3D)
@@ -129,7 +129,7 @@ Command (POST /actions) → Agrégat → Événements → Event Store (PostgreSQ
    - `POST /api/v1/combats/:id/actions` (exécuter action)
    - `GET /api/v1/combats/:id` (état combat via projection)
 
-###  Ce que le Fabric NE fait PAS
+### Ce que le Fabric NE fait PAS
 
 - Interface utilisateur → Client Angular séparé
 - Synchronisation temps réel → API Observer (écoute Kafka → WebSocket)
@@ -139,7 +139,7 @@ Command (POST /actions) → Agrégat → Événements → Event Store (PostgreSQ
 
 ---
 
-##  Stack Technique
+## Stack Technique
 
 | Composant | Technologie | Justification |
 |-----------|-------------|---------------|
@@ -155,7 +155,7 @@ Command (POST /actions) → Agrégat → Événements → Event Store (PostgreSQ
 
 ---
 
-##  Installation & Configuration
+## Installation & Configuration
 
 ### Prérequis
 
@@ -215,7 +215,7 @@ METRICS_PORT=9090
 
 ---
 
-##  Structure du Projet (Architecture Hexagonale)
+## Structure du Projet (Architecture Hexagonale)
 
 ```
 Aether-Engine/
@@ -224,45 +224,45 @@ Aether-Engine/
 │   ├── go.mod                       # Dépendances Go
 │   └── internal/                    # Code non exportable
 │       ├── combat/                  # Bounded Context Combat
-│       │   ├── domain/              #  À IMPLÉMENTER
+│       │   ├── domain/              # À IMPLÉMENTER
 │       │   │   ├── combat.go        # Agrégat racine
 │       │   │   ├── unite.go         # Entité Unite
 │       │   │   ├── equipe.go        # Entité Equipe
 │       │   │   ├── competence.go    # Value Object
 │       │   │   └── grille.go        # Grille tactique 3D
-│       │   ├── application/         #  À IMPLÉMENTER
+│       │   ├── application/         # À IMPLÉMENTER
 │       │   │   ├── demarrer_combat.go
 │       │   │   ├── executer_action.go
 │       │   │   └── terminer_combat.go
-│       │   ├── infrastructure/      #  À IMPLÉMENTER
+│       │   ├── infrastructure/      # À IMPLÉMENTER
 │       │   │   ├── event_store.go   # Repository Event Store
 │       │   │   ├── projections.go   # Handlers projections
 │       │   │   └── kafka.go         # Publisher Kafka
-│       │   └── api/                 #  À IMPLÉMENTER
+│       │   └── api/                 # À IMPLÉMENTER
 │       │       └── handlers.go      # Endpoints REST
 │       └── shared/                  # Code partagé
-│           └── domain/              #  FAIT
+│           └── domain/              # FAIT
 │               ├── position.go      # Value Object Position (3D)
 │               ├── stats.go         # Value Object Statistiques
 │               ├── unit_id.go       # Value Object UnitID
 │               └── status.go        # Value Object Statut
-├── doc/                             #  Documentation complète
+├── doc/                             # Documentation complète
 │   ├── agregats.md                  # Définition des agrégats
 │   ├── bases_donnees/               # Schémas Event Store + Projections
 │   ├── machines_etats/              # Machines d'états du combat
 │   ├── diagrammes_*/                # Diagrammes Mermaid
 │   └── tests/                       # Documentation des tests
-└── tests/                           #  Tests à migrer dans server/
-    └── bases_donnees/               #  Tests PostgreSQL (14/14 passed)
+└── tests/                           # Tests à migrer dans server/
+    └── bases_donnees/               # Tests PostgreSQL (14/14 passed)
 ```
 
 ---
 
-##  Tests
+## Tests
 
 ### Tests Unitaires (Value Objects)
 
- **100%** des Value Objects testés :
+**100%** des Value Objects testés :
 
 ```bash
 # Position 3D
@@ -280,7 +280,7 @@ go test -v server/internal/shared/domain/status_test.go
 
 ### Tests d'Intégration (PostgreSQL)
 
- **14/14** tests Event Store + Projections :
+**14/14** tests Event Store + Projections :
 
 ```bash
 # Tous les tests PostgreSQL
@@ -297,7 +297,7 @@ Documentation détaillée : [`doc/tests/bases_donnees/README.md`](doc/tests/base
 
 ---
 
-##  Documentation
+## Documentation
 
 ### Documentation Centrale
 
@@ -325,22 +325,22 @@ Documentation détaillée : [`doc/tests/bases_donnees/README.md`](doc/tests/base
 
 ---
 
-##  Roadmap (Phases DDD)
+## Roadmap (Phases DDD)
 
 | Phase | Objectif | État | ETA |
 |-------|----------|------|-----|
-| **P1** | Fondations & Contrats |  80% | Actuelle |
-| **P2** | Cœur Combat Déterministe |  20% | 2-3 sem |
-| **P3** | Fabric & Résolution |  0% | 2-3 sem |
-| **P4** | Résilience & Event Sourcing |  0% | 2 sem |
-| **P5** | API & Scalabilité |  0% | 2 sem |
-| **P6** | Production-Ready |  0% | 1 sem |
+| **P1** | Fondations & Contrats | 80% | Actuelle |
+| **P2** | Cœur Combat Déterministe | 20% | 2-3 sem |
+| **P3** | Fabric & Résolution | 0% | 2-3 sem |
+| **P4** | Résilience & Event Sourcing | 0% | 2 sem |
+| **P5** | API & Scalabilité | 0% | 2 sem |
+| **P6** | Production-Ready | 0% | 1 sem |
 
 Détails : [`doc/feuille_de_route.md`](doc/feuille_de_route.md)
 
 ---
 
-##  Contribution
+## Contribution
 
 Ce projet suit les principes **Domain-Driven Design (DDD)** et **Event Sourcing**.
 
@@ -353,13 +353,13 @@ Ce projet suit les principes **Domain-Driven Design (DDD)** et **Event Sourcing*
 
 ---
 
-##  Licence
+## Licence
 
 Projet sous licence de El Miminette 
 
 ---
 
-##  Écosystème Fantasy Tower
+## Écosystème Fantasy Tower
 
 Le **Serveur Fabric (Aether Engine)** fait partie d'une architecture MMO plus large :
 
@@ -372,7 +372,7 @@ Le **Serveur Fabric (Aether Engine)** fait partie d'une architecture MMO plus la
                           │ Kafka Events      │ REST
                           │                   │
                    ┌──────┴───────────────────┴──────┐
-                   │   🎮 AETHER ENGINE (Fabric) 🎮  │
+                   │   AETHER ENGINE (Fabric)  │
                    │   - Validation autoritaire      │
                    │   - Résolution déterministe     │
                    │   - Event Store PostgreSQL      │
