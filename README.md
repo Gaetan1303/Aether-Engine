@@ -68,31 +68,45 @@ Command (POST /actions) → Agrégat → Événements → Event Store (PostgreSQ
 
 | Composant | État | Documentation |
 |-----------|------|---------------|
-| **Architecture DDD** |  Documentée | [`doc/agregats.md`](doc/agregats.md) |
-| **Value Objects** |  Implémentés + Testés | [`server/internal/shared/domain/`](server/internal/shared/domain/) |
-| - Position (3D) |  100% | [`doc/tests/position/`](doc/tests/position/) |
-| - Statistiques |  100% | [`doc/tests/stats/`](doc/tests/stats/) |
-| - UnitID |  100% | [`doc/tests/unitID/`](doc/tests/unitID/) |
-| - Statut |  100% | [`doc/tests/statut/`](doc/tests/statut/) |
-| **Event Store (schémas)** |  Documenté | [`doc/bases_donnees/event_store.md`](doc/bases_donnees/event_store.md) |
-| **Projections (schémas)** |  Documentées | [`doc/bases_donnees/projections_combat.md`](doc/bases_donnees/projections_combat.md) |
-| **Tests PostgreSQL** |  14/14 passed | [`doc/tests/bases_donnees/`](doc/tests/bases_donnees/) |
-| **Machines d'états** |  Documentées | [`doc/machines_etats/`](doc/machines_etats/) |
-| **Hooks Fabric** |  Documentés | [`doc/tour_unite_hooks_integres.md`](doc/tour_unite_hooks_integres.md) |
-| **40+ Types d'événements** |  Spécifiés | [`doc/matrice_evenements.md`](doc/matrice_evenements.md) |
+| **Architecture DDD** | Documentée + Implémentée | [`doc/agregats.md`](doc/agregats.md) |
+| **Value Objects** | Implémentés + Testés | [`internal/shared/domain/`](internal/shared/domain/) |
+| - Position (3D) | 100% | [`doc/tests/position/`](doc/tests/position/) |
+| - Statistiques | 100% | [`doc/tests/stats/`](doc/tests/stats/) |
+| - UnitID | 100% | [`doc/tests/unitID/`](doc/tests/unitID/) |
+| - Statut | 100% | [`doc/tests/statut/`](doc/tests/statut/) |
+| **Agrégats Domain** | Implémentés | [`internal/combat/domain/`](internal/combat/domain/) |
+| - Combat (Aggregate Root) | 100% | [`internal/combat/domain/combat.go`](internal/combat/domain/combat.go) |
+| - Unite (Entity) | 100% | [`internal/combat/domain/unite.go`](internal/combat/domain/unite.go) |
+| - Equipe (Entity) | 100% | [`internal/combat/domain/equipe.go`](internal/combat/domain/equipe.go) |
+| - Competence (Value Object) | 100% | [`internal/combat/domain/competence.go`](internal/combat/domain/competence.go) |
+| **Design Patterns** | 11/12 (92%) | [`doc/tests/domain/`](doc/tests/domain/) |
+| - Strategy Pattern | 100% (6 strategies) | [`doc/tests/domain/STRATEGY_PATTERN_IMPLEMENTED.md`](doc/tests/domain/STRATEGY_PATTERN_IMPLEMENTED.md) |
+| - Singleton Pattern | 100% (ID Generator) | [`doc/tests/domain/SINGLETON_PATTERN_IMPLEMENTED.md`](doc/tests/domain/SINGLETON_PATTERN_IMPLEMENTED.md) |
+| **Event Store** | Implémenté | [`internal/combat/infrastructure/event_store.go`](internal/combat/infrastructure/event_store.go) |
+| **Combat Engine** | Implémenté | [`internal/combat/application/combat_engine.go`](internal/combat/application/combat_engine.go) |
+| **API REST** | Implémentée | [`api/handlers/combat_handler.go`](api/handlers/combat_handler.go) |
+| **Kafka Publisher** | Implémenté | [`pkg/eventbus/kafka_publisher.go`](pkg/eventbus/kafka_publisher.go) |
+| **Tests PostgreSQL** | 14/14 passed | [`doc/tests/bases_donnees/`](doc/tests/bases_donnees/) |
+| **Machines d'états** | Documentées | [`doc/machines_etats/`](doc/machines_etats/) |
+| **Hooks Fabric** | Documentés | [`doc/tour_unite_hooks_integres.md`](doc/tour_unite_hooks_integres.md) |
+| **40+ Types d'événements** | Spécifiés | [`doc/matrice_evenements.md`](doc/matrice_evenements.md) |
 
-### En cours / À faire (Phase actuelle : P1 → P2)
+### En cours / À faire (Phase actuelle : P2 → P3)
 
-| Composant | Priorité | Effort estimé |
-|-----------|----------|---------------|
-| **Agrégats Go** (Combat, Unite, Equipe) | 🔴 P0 | 3-4 jours |
-| **Event Store (implémentation)** | 🔴 P0 | 2-3 jours |
-| **Use Cases** (DemarrerCombat, ExecuterAction) | 🔴 P0 | 3-4 jours |
-| **Projections (handlers)** | 🔴 P0 | 2-3 jours |
-| **API REST** (endpoints combat) | 🔴 P0 | 2-3 jours |
-| **Pipeline Fabric** (hooks + effets) | 🟠 P1 | 1 semaine |
-| **Kafka Publisher** | 🟠 P1 | 2-3 jours |
-| **Redis Cache** | 🟡 P2 | 2-3 jours |
+| Composant | Priorité | État |
+|-----------|----------|------|
+| **Agrégats Go** (Combat, Unite, Equipe) | P0 | FAIT |
+| **Event Store (implémentation)** | P0 | FAIT |
+| **Use Cases** (DemarrerCombat, ExecuterAction) | P0 | FAIT |
+| **API REST** (endpoints combat) | P0 | FAIT |
+| **Kafka Publisher** | P1 | FAIT |
+| **Design Patterns GoF** | P1 | 11/12 (92%) |
+| **Projections (handlers)** | P1 | EN COURS |
+| **Pipeline Fabric** (hooks + effets) | P1 | EN COURS |
+| **Pathfinding A*** | P2 | À FAIRE |
+| **Turn Manager** | P2 | À FAIRE |
+| **Redis Cache** | P2 | À FAIRE |
+| **Builder Pattern** | P3 | OPTIONNEL |
 
 ---
 
@@ -172,7 +186,6 @@ git clone https://github.com/Gaetan1303/Aether-Engine.git
 cd Aether-Engine
 
 # Installer les dépendances Go
-cd server
 go mod download
 
 # Configurer PostgreSQL de test
@@ -180,35 +193,39 @@ sudo -u postgres createdb aether_test
 sudo -u postgres psql -c "CREATE USER test WITH PASSWORD 'test';"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE aether_test TO test;"
 
-# Lancer les tests
-go test ./tests/bases_donnees -v
+# Lancer les tests unitaires (Design Patterns)
+go test ./doc/tests/domain -v
 
-# Lancer le serveur (actuellement minimal)
-go run main.go
+# Lancer les tests d'intégration (PostgreSQL)
+go test ./doc/tests/bases_donnees -v
+
+# Compiler le serveur
+go build -o bin/fabric ./cmd/fabric
+
+# Lancer le serveur
+./bin/fabric
+# Ou avec variables d'environnement personnalisées
+DATABASE_URL=postgres://test:test@localhost:5432/aether_test PORT=8080 ./bin/fabric
 ```
 
-### Variables d'environnement (futures)
+### Variables d'environnement
 
 ```env
 # Serveur
-GIN_MODE=release
-PORT=8080
+PORT=8080                                    # Port du serveur (défaut: 8080)
 
 # PostgreSQL (Event Store + Projections)
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=aether_engine
-DB_USER=aether
-DB_PASSWORD=your_password
+DATABASE_URL=postgres://test:test@localhost:5432/aether_test?sslmode=disable
 
-# Redis (Cache)
+# Kafka (Event Bus)
+KAFKA_BROKERS=localhost:9092                 # Brokers Kafka (défaut: localhost:9092)
+KAFKA_TOPIC=combat-events                    # Topic des événements (défaut: combat-events)
+
+# Redis (Cache) - À venir
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-# Kafka (Event Bus)
-KAFKA_BROKERS=localhost:9092
-
-# Observabilité
+# Observabilité - À venir
 LOG_LEVEL=info
 METRICS_PORT=9090
 ```
@@ -219,63 +236,98 @@ METRICS_PORT=9090
 
 ```
 Aether-Engine/
-├── server/
-│   ├── main.go                      # Point d'entrée (actuellement minimal)
-│   ├── go.mod                       # Dépendances Go
-│   └── internal/                    # Code non exportable
-│       ├── combat/                  # Bounded Context Combat
-│       │   ├── domain/              # À IMPLÉMENTER
-│       │   │   ├── combat.go        # Agrégat racine
-│       │   │   ├── unite.go         # Entité Unite
-│       │   │   ├── equipe.go        # Entité Equipe
-│       │   │   ├── competence.go    # Value Object
-│       │   │   └── grille.go        # Grille tactique 3D
-│       │   ├── application/         # À IMPLÉMENTER
-│       │   │   ├── demarrer_combat.go
-│       │   │   ├── executer_action.go
-│       │   │   └── terminer_combat.go
-│       │   ├── infrastructure/      # À IMPLÉMENTER
-│       │   │   ├── event_store.go   # Repository Event Store
-│       │   │   ├── projections.go   # Handlers projections
-│       │   │   └── kafka.go         # Publisher Kafka
-│       │   └── api/                 # À IMPLÉMENTER
-│       │       └── handlers.go      # Endpoints REST
-│       └── shared/                  # Code partagé
-│           └── domain/              # FAIT
-│               ├── position.go      # Value Object Position (3D)
-│               ├── stats.go         # Value Object Statistiques
-│               ├── unit_id.go       # Value Object UnitID
-│               └── status.go        # Value Object Statut
+├── cmd/
+│       └─ main.go                  # Point d'entrée principal
+├── go.mod                           # Dépendances Go
+├── go.sum                           # Checksums des dépendances
+├── internal/                        # Code non exportable
+│   ├── combat/                      # Bounded Context Combat
+│   │   ├── domain/                  # IMPLÉMENTÉ
+│   │   │   ├── combat.go            # Agrégat racine Combat
+│   │   │   ├── unite.go             # Entité Unite
+│   │   │   ├── equipe.go            # Entité Equipe
+│   │   │   ├── competence.go        # Value Object Competence
+│   │   │   ├── damage_calculator.go # Strategy Pattern (6 calculateurs)
+│   │   │   ├── events.go            # Événements domain
+│   │   │   └── enums.go             # Énumérations
+│   │   ├── application/             # IMPLÉMENTÉ
+│   │   │   ├── combat_engine.go     # Moteur de combat (Use Cases)
+│   │   │   └── commands.go          # Commandes CQRS
+│   │   └── infrastructure/          # IMPLÉMENTÉ
+│   │       └── event_store.go       # Repository Event Store PostgreSQL
+│   └── shared/                      # Code partagé
+│       └── domain/                  # IMPLÉMENTÉ
+│           ├── value_objects.go     # Position, Stats, UnitID, Statut
+│           ├── id_generator.go      # Singleton Pattern (génération IDs)
+│           ├── types.go             # Types de base
+│           └── interfaces.go        # Interfaces partagées
+├── api/                             # API Layer
+│   └── handlers/
+│       └── combat_handler.go        # Endpoints REST (IMPLÉMENTÉ)
+├── pkg/                             # Packages exportables
+│   └── eventbus/
+│       └── kafka_publisher.go       # Publisher Kafka (IMPLÉMENTÉ)
+├── bin/                             # Binaires compilés
+│   └── fabric                       # Exécutable serveur
 ├── doc/                             # Documentation complète
 │   ├── agregats.md                  # Définition des agrégats
 │   ├── bases_donnees/               # Schémas Event Store + Projections
 │   ├── machines_etats/              # Machines d'états du combat
 │   ├── diagrammes_*/                # Diagrammes Mermaid
-│   └── tests/                       # Documentation des tests
-└── tests/                           # Tests à migrer dans server/
-    └── bases_donnees/               # Tests PostgreSQL (14/14 passed)
+│   └── tests/                       # Tests et documentation
+│       ├── domain/                  # Tests Design Patterns
+│       │   ├── strategy_pattern_test.go        # Tests Strategy (8/8 PASS)
+│       │   ├── id_generator_test.go            # Tests Singleton (14/14 PASS)
+│       │   ├── STRATEGY_PATTERN_IMPLEMENTED.md
+│       │   └── SINGLETON_PATTERN_IMPLEMENTED.md
+│       ├── bases_donnees/           # Tests PostgreSQL (14/14 PASS)
+│       ├── position/                # Tests Position 3D
+│       ├── stats/                   # Tests Statistiques
+│       ├── unitID/                  # Tests UnitID
+│       └── statut/                  # Tests Statut
+└── Plan/                            # Documentation planning
+    ├── semaine_1.md
+    └── architecture_globale.md
 ```
 
 ---
 
 ## Tests
 
-### Tests Unitaires (Value Objects)
+### Tests Design Patterns
+
+**22/22** tests de patterns réussis :
+
+```bash
+# Strategy Pattern (6 calculateurs de dégâts)
+go test -v ./doc/tests/domain/strategy_pattern_test.go
+# Résultat: 8/8 PASS
+
+# Singleton Pattern (ID Generator)
+go test -v ./doc/tests/domain/id_generator_test.go
+# Résultat: 14/14 PASS
+
+# Benchmarks ID Generator
+go test -bench=. -benchmem ./doc/tests/domain/id_generator_test.go
+# Performance: 3.2M IDs/sec, 371ns/op
+```
+
+### Tests Value Objects
 
 **100%** des Value Objects testés :
 
 ```bash
 # Position 3D
-go test -v server/internal/shared/domain/position_test.go
+go test -v ./doc/tests/position/position_test.go
 
 # Statistiques
-go test -v server/internal/shared/domain/stats_test.go
+go test -v ./doc/tests/stats/stats_test.go
 
 # UnitID
-go test -v server/internal/shared/domain/unit_id_test.go
+go test -v ./doc/tests/unitID/unitid_test.go
 
 # Statut
-go test -v server/internal/shared/domain/status_test.go
+go test -v ./doc/tests/statut/statut_test.go
 ```
 
 ### Tests d'Intégration (PostgreSQL)
@@ -284,13 +336,13 @@ go test -v server/internal/shared/domain/status_test.go
 
 ```bash
 # Tous les tests PostgreSQL
-go test ./tests/bases_donnees -v
+go test ./doc/tests/bases_donnees -v
 
 # Event Store uniquement
-go test ./tests/bases_donnees -v -run "TestInsert|TestOptimistic|TestSnapshot|TestReconstruct|TestQuery|TestTransactional"
+go test ./doc/tests/bases_donnees -v -run "TestInsert|TestOptimistic|TestSnapshot|TestReconstruct|TestQuery|TestTransactional"
 
 # Projections uniquement
-go test ./tests/bases_donnees -v -run "TestCombat.*Projection|TestProjectionIdempotence"
+go test ./doc/tests/bases_donnees -v -run "TestCombat.*Projection|TestProjectionIdempotence"
 ```
 
 Documentation détaillée : [`doc/tests/bases_donnees/README.md`](doc/tests/bases_donnees/README.md)
@@ -327,16 +379,85 @@ Documentation détaillée : [`doc/tests/bases_donnees/README.md`](doc/tests/base
 
 ## Roadmap (Phases DDD)
 
-| Phase | Objectif | État | ETA |
-|-------|----------|------|-----|
-| **P1** | Fondations & Contrats | 80% | Actuelle |
-| **P2** | Cœur Combat Déterministe | 20% | 2-3 sem |
-| **P3** | Fabric & Résolution | 0% | 2-3 sem |
-| **P4** | Résilience & Event Sourcing | 0% | 2 sem |
-| **P5** | API & Scalabilité | 0% | 2 sem |
-| **P6** | Production-Ready | 0% | 1 sem |
+| Phase | Objectif | État | Progrès |
+|-------|----------|------|--------|
+| **P1** | Fondations & Contrats | TERMINÉE | 100% |
+| **P2** | Cœur Combat Déterministe | EN COURS | 75% |
+| **P3** | Fabric & Résolution | EN COURS | 40% |
+| **P4** | Résilience & Event Sourcing | IMPLÉMENTÉE | 80% |
+| **P5** | API & Scalabilité | IMPLÉMENTÉE | 70% |
+| **P6** | Production-Ready | EN COURS | 30% |
+
+### Réalisations majeures
+- Architecture DDD complète (Agrégats, Entités, Value Objects)
+- 11/12 Design Patterns GoF (92%)
+- Event Store PostgreSQL fonctionnel
+- API REST opérationnelle (5 endpoints)
+- Strategy Pattern (6 calculateurs de dégâts)
+- Singleton Pattern (génération d'IDs thread-safe)
+- Kafka Event Publisher intégré
 
 Détails : [`doc/feuille_de_route.md`](doc/feuille_de_route.md)
+
+---
+
+## API Endpoints
+
+Le serveur Fabric expose les endpoints REST suivants :
+
+### Combat Management
+
+```http
+# Démarrer un nouveau combat
+POST /api/v1/combats
+Content-Type: application/json
+
+{
+  "equipes": [...],
+  "grille": {...}
+}
+
+# Obtenir l'état d'un combat
+GET /api/v1/combats/:id
+
+# Exécuter une action
+POST /api/v1/combats/:id/actions
+Content-Type: application/json
+
+{
+  "uniteID": "unit_123",
+  "typeAction": "ATTAQUE",
+  "cibleID": "unit_456"
+}
+
+# Passer au tour suivant
+POST /api/v1/combats/:id/tour-suivant
+
+# Terminer un combat
+POST /api/v1/combats/:id/terminer
+```
+
+### Health Check
+
+```http
+# Vérifier l'état du serveur
+GET /ping
+
+Response: {"message": "pong"}
+```
+
+### Démarrage du serveur
+
+```bash
+# Avec configuration par défaut
+./bin/fabric
+
+# Le serveur démarre sur http://localhost:8080
+# Logs attendus:
+# Connexion PostgreSQL établie
+# Event Publisher Kafka créé
+# Serveur Fabric démarré sur le port 8080
+```
 
 ---
 
