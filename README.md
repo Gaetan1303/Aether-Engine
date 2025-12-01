@@ -2,7 +2,7 @@
 # Aether-Engine (Go + Gin)
 
 > **Note de synchronisation** :
-> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/Agrégats.md`.
+> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/agregats.md`.
 > Les diagrammes et la documentation utilisent le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
 
 Ce serveur est le cœur du projet Fantasy Tower, gérant toute la logique métier du jeu : combats tactiques au tour par tour, progression des personnages, système de quêtes, économie et règles complexes de gameplay. Conçu selon une architecture microservices scalable, Aether Engine garantit la cohérence des règles et la robustesse du gameplay.

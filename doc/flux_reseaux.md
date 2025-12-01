@@ -1,6 +1,6 @@
 > **Note de synchronisation** :
 > Ce diagramme de flux réseau utilise le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
-> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/Agrégats.md`.
+> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/agregats.md`.
 
 ```mermaid
 flowchart TD

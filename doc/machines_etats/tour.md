@@ -1,3 +1,19 @@
+# Machine d'États : Cycle de Tour d'une Unité (Vue Focus Unité)
+
+> **📊 VUE DÉRIVÉE**
+> Cette machine d'états se concentre sur le **cycle de vie d'un tour d'une unité spécifique**.
+> **Source de vérité** : `/doc/machines_etats/combat_core_p2.md`
+> **Mapping des états** : `/doc/machines_etats/mapping_vues.md`
+
+---
+
+## Vue orientée cycle d'une unité
+
+Cette vue est utile pour :
+- Comprendre le déroulement d'un tour d'une unité individuelle
+- Déboguer la logique de validation et d'exécution
+- Documenter les hooks spécifiques à une unité
+
 ```mermaid
 stateDiagram-v2
     [*] --> AwaitingTurn
@@ -81,5 +97,43 @@ stateDiagram-v2
 
     %% --- 8. Skip turn (stun/sleep/etc.) ---
     SkipTurn --> TurnEnd : Skip_Resolved
-
 ```
+
+---
+
+## Mapping vers la machine canonique
+
+Cette vue se focalise sur **un seul tour d'une seule unité**, contrairement à la machine canonique qui gère le cycle complet du combat.
+
+| État focus unité | État(s) canonique(s) | Notes |
+|------------------|----------------------|-------|
+| AwaitingTurn | WaitingATB | En attente que l'ATB de l'unité soit prêt |
+| TurnStart | TurnBegin | Début du tour avec hooks OnTurnStart |
+| SkipTurn | Stunned | Unité bloquée (stun/sleep) |
+| ActionSelection | ActionSelection | Identique |
+| Validating | Validating | Détaillé avec sous-états composites |
+| Confirmed | Confirmed | Identique |
+| Executing | Executing | Détaillé avec sous-états composites |
+| ExecutionFailed | ExecutionFailed | Identique |
+| ApplyEffects | ApplyingEffects | Détaillé avec sous-états composites |
+| TurnEnd | TurnEnd | Identique |
+
+---
+
+## Notes spécifiques à cette vue
+
+### États composites
+Cette vue utilise des **états composites** (nested states) pour décomposer la logique interne :
+- `TurnStart` contient les vérifications de statut
+- `ActionSelection` gère l'attente et l'action "Wait"
+- `Validating` décompose les vérifications (Range, Cost, Restrictions)
+- `Executing` décompose l'exécution (Movement, Skill, Statuses)
+- `ApplyEffects` gère la résolution et la vérification des morts
+- `TurnEnd` gère la décrémentation et la mise à jour ATB
+
+### Omissions volontaires
+Cette vue ne couvre **pas** :
+- L'initialisation du combat (hors scope d'un tour)
+- La vérification de victoire (responsabilité du combat global)
+- Le passage à l'unité suivante (géré par le combat)
+- La finalisation du combat (hors scope d'un tour)

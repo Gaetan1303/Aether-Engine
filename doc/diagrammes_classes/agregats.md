@@ -6,7 +6,7 @@ classDiagram
 
 %% Note de synchronisation :
 %% Ce diagramme utilise le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
-%% Les définitions détaillées sont centralisées dans `/doc/Agrégats.md`.
+%% Les définitions détaillées sont centralisées dans `/doc/agregats.md`.
 
 class Joueur {
     +UUID id

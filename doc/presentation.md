@@ -2,7 +2,7 @@
 # Présentation du Projet Tactical RPG – Serveur avec un design pattern de type Fabric
 
 > **Note de synchronisation** :
-> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/Agrégats.md`.
+> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/agregats.md`.
 > Les diagrammes utilisent le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
 
 ## 1. Vision Générale
@@ -31,7 +31,11 @@
 
 ## 3. Machine d'états du Combat
 
-Cycle : Attente → Préparation → EnCours → AttenteAction → Exécution → ApplicationEffets → PostTraitement → Terminé
+> **Note** : Cette vue simplifiée est présentée ici pour la compréhension conceptuelle.
+> **Machine canonique complète** : `/doc/machines_etats/combat_core_p2.md`
+> **Mapping des vues** : `/doc/machines_etats/mapping_vues.md`
+
+Cycle simplifié : Attente → Préparation → EnCours → AttenteAction → Exécution → ApplicationEffets → PostTraitement → Terminé
 
 ```mermaid
 stateDiagram-v2

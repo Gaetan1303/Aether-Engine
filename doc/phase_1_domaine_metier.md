@@ -2,7 +2,7 @@
 # Phase 1 : Fondations & Contrats
 
 > **Note de synchronisation** :
-> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/Agrégats.md`.
+> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/agregats.md`.
 > Les diagrammes et la documentation utilisent le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
 
 ## Objectif du Jalon

@@ -3,7 +3,7 @@
 # Roadmap Technique — Aether-Engine (Serveur Autoritatif)
 
 > **Note de synchronisation** :
-> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/Agrégats.md`.
+> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/agregats.md`.
 > Les diagrammes et la documentation utilisent le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
 
 > **Objectif** : Développer un moteur de combat tactique déterministe, résilient aux pannes (Event Sourcing) et modulaire (DDD/Fabric).
