@@ -1,4 +1,9 @@
+
 # Présentation du Projet Tactical RPG – Serveur avec un design pattern de type Fabric
+
+> **Note de synchronisation** :
+> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/Agrégats.md`.
+> Les diagrammes utilisent le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
 
 ## 1. Vision Générale
 
@@ -15,64 +20,66 @@
 ## 2. Domain-Driven Design (DDD)
 
 - **Agrégats principaux** :
-  - Unit
-  - Team
-  - BattleGrid
-  - Battle (agrégat maître)
-- **Skill** : Value Object (immuable)
+  - Unité
+  - Équipe
+  - GrilleDeCombat
+  - Combat (agrégat maître)
+- **Compétence** : Value Object (immuable)
 
 ---
 
-## 3. State Machine du Combat
 
-Cycle : Idle → Preparing → Running → WaitingForAction → Executing → ApplyingEffects → PostProcessing → Ended
+## 3. Machine d'états du Combat
+
+Cycle : Attente → Préparation → EnCours → AttenteAction → Exécution → ApplicationEffets → PostTraitement → Terminé
 
 ```mermaid
 stateDiagram-v2
-[*] --> Idle
-Idle --> Preparing : startBattle()
-Preparing --> Running : initTurnOrder()
-Running --> WaitingForAction : nextActorReady
-WaitingForAction --> ExecutingAction : receiveAction
-ExecutingAction --> ApplyingEffects : resolveAction
-ApplyingEffects --> PostProcessing : applyEffects, updateATB
-PostProcessing --> Running : continue / checkEnd
-Running --> Ended : victory OR defeat
-Ended --> [*]
+[*] --> Attente
+Attente --> Préparation : demarrerCombat()
+Préparation --> EnCours : initOrdreTour()
+EnCours --> AttenteAction : prochainActeurPret
+AttenteAction --> ExecutionAction : recevoirAction
+ExecutionAction --> ApplicationEffets : resoudreAction
+ApplicationEffets --> PostTraitement : appliquerEffets, majATB
+PostTraitement --> EnCours : continuer / verifierFin
+EnCours --> Terminé : victoire OU défaite
+Terminé --> [*]
 ```
 
 ---
+
 
 ## 4. Diagramme de Classes (Mermaid)
 
 ```mermaid
 classDiagram
-class Unit {
-  +UnitID id
-  +Stats stats
-  +Status[] statuses
+class Unite {
+  +IdentifiantUnite id
+  +Statistiques stats
+  +Statut[] statuts
   +Position pos
-  +ApplyDamage()
-  +ApplyStatus()
+  +appliquerDegats()
+  +appliquerStatut()
 }
-class Team {
-  +TeamID id
-  +Unit[] members
+class Equipe {
+  +IdentifiantEquipe id
+  +Unite[] membres
 }
-class BattleGrid {
-  +width
-  +height
-  +cells
+class GrilleDeCombat {
+  +largeur
+  +hauteur
+  +cases
 }
-class Battle {
-  +BattleID id
-  +Team[] teams
-  +BattleGrid grid
-  +TurnOrder order
+class Combat {
+  +IdentifiantCombat id
+  +Equipe[] equipes
+  +GrilleDeCombat grille
+  +OrdreDeTour ordre
 }
-Unit -- Team
-Team -- Battle
-Battle -- BattleGrid
+Unite -- Equipe
+Equipe -- Combat
+Combat -- GrilleDeCombat
 ```
 
 ---

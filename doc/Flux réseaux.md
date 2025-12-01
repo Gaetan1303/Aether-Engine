@@ -1,47 +1,51 @@
+> **Note de synchronisation** :
+> Ce diagramme de flux réseau utilise le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
+> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/Agrégats.md`.
+
 ```mermaid
 flowchart TD
     %% Clients
-    Client[Client Angular / Frontend] -->|WebSocket / RPC| Gateway[API Gateway]
+    Client[Client Angular / Frontend] -->|WebSocket / RPC| Passerelle[API Gateway]
 
     %% Gateway
-    Gateway -->|Auth & Routing| PlayerService[Service Joueur / Account]
-    Gateway -->|Routing| CombatService[Service Combat / Gameplay]
-    Gateway -->|Routing| WorldService[Service Monde / World]
-    Gateway -->|Routing| QuestService[Service Quêtes / Missions]
-    Gateway -->|Routing| EconomyService[Service Économie / Craft]
-    Gateway -->|Routing| ChatService[Service Communication / Chat]
+    Passerelle -->|Auth & Routage| ServiceJoueur[Service Joueur / Compte]
+    Passerelle -->|Routage| ServiceCombat[Service Combat / Gameplay]
+    Passerelle -->|Routage| ServiceMonde[Service Monde / World]
+    Passerelle -->|Routage| ServiceQuete[Service Quêtes / Missions]
+    Passerelle -->|Routage| ServiceEconomie[Service Économie / Craft]
+    Passerelle -->|Routage| ServiceChat[Service Communication / Chat]
 
     %% Event Bus
-    CombatService -->|Event combat terminé| EventBus[Broker / Event Bus]
-    QuestService -->|Event progression| EventBus
-    EconomyService -->|Event craft / loot| EventBus
-    EventBus --> PlayerService
-    EventBus --> WorldService
-    EventBus --> QuestService
-    EventBus --> EconomyService
+    ServiceCombat -->|Evénement combat terminé| BusEvenement[Broker / Event Bus]
+    ServiceQuete -->|Evénement progression| BusEvenement
+    ServiceEconomie -->|Evénement craft / loot| BusEvenement
+    BusEvenement --> ServiceJoueur
+    BusEvenement --> ServiceMonde
+    BusEvenement --> ServiceQuete
+    BusEvenement --> ServiceEconomie
 
     %% Persistence
-    PlayerService -->|CRUD| DBPlayer[PostgreSQL / DB joueurs]
-    WorldService -->|Persist state| DBWorld[PostgreSQL / DB monde]
-    CombatService -->|Log combats| EventStore[Event Store]
-    QuestService -->|Log progression| EventStore
-    EconomyService -->|Log économie| EventStore
-    ChatService -->|Store messages| DBChat[NoSQL / Redis]
+    ServiceJoueur -->|CRUD| DBJoueur[PostgreSQL / DB joueurs]
+    ServiceMonde -->|Persiste état| DBMonde[PostgreSQL / DB monde]
+    ServiceCombat -->|Log combats| EventStore[Event Store]
+    ServiceQuete -->|Log progression| EventStore
+    ServiceEconomie -->|Log économie| EventStore
+    ServiceChat -->|Stocke messages| DBChat[NoSQL / Redis]
 
     %% Cache
-    PlayerService -->|Cache stats & inventory| CacheRedis[Redis]
-    WorldService -->|Cache positions & state| CacheRedis
-    CombatService -->|Cache combat state| CacheRedis
+    ServiceJoueur -->|Cache stats & inventaire| CacheRedis[Redis]
+    ServiceMonde -->|Cache positions & état| CacheRedis
+    ServiceCombat -->|Cache état combat| CacheRedis
 
     %% Monitoring
-    EventBus -->|Metrics & logs| Monitoring[Prometheus / Grafana]
+    BusEvenement -->|Métriques & logs| Monitoring[Prometheus / Grafana]
 
     %% Notes
     subgraph "Infrastructure"
-        Gateway
-        EventBus
-        DBPlayer
-        DBWorld
+        Passerelle
+        BusEvenement
+        DBJoueur
+        DBMonde
         EventStore
         DBChat
         CacheRedis

@@ -1,64 +1,68 @@
 ```mermaid
 classDiagram
-    %% ================================
-    %%      AGGREGATS PRINCIPAUX
-    %% ================================
+%% ================================
+%%      AGRÉGATS PRINCIPAUX (fr)
+%% ================================
 
-    class Player {
-        +UUID id
-        +Stats stats
-        +Level level
-        +Class characterClass
-        +EquipmentSetID equipmentId
-        +InventoryID inventoryId
-        +QuestLogID questLogId
-        +List~StatusEffect~ effects
-    }
+%% Note de synchronisation :
+%% Ce diagramme utilise le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
+%% Les définitions détaillées sont centralisées dans `/doc/Agrégats.md`.
 
-    class CombatInstance {
-        +UUID id
-        +List~Participant~ actors
-        +TurnOrder initiative
-        +int currentTurn
-        +ActionQueue actions
-        +CombatLog log
-        +State fightState
-    }
+class Joueur {
+    +UUID id
+    +Statistiques stats
+    +Niveau niveau
+    +Classe classe
+    +EquipmentSetID equipementId
+    +InventoryID inventaireId
+    +QuestLogID journalQuetesId
+    +List~EffetStatut~ effets
+}
 
-    class Inventory {
-        +UUID id
-        +List~Item~ items
-        +int capacity
-        +int weight
-        +Currency gold
-    }
+class InstanceCombat {
+    +UUID id
+    +List~Participant~ participants
+    +OrdreDeTour initiative
+    +int tourActuel
+    +FileActions actions
+    +JournalCombat log
+    +EtatCombat etat
+}
 
-    class EquipmentSet {
-        +UUID id
-        +Item head
-        +Item chest
-        +Item legs
-        +Item boots
-        +Item weapon
-        +Resistances totalRes
-    }
+class Inventaire {
+    +UUID id
+    +List~item~ items
+    +int capacite
+    +int poids
+    +Monnaie gold
+}
 
-    class Item {
-        +UUID id
-        +ItemType type
-        +Rarity rarity
-        +Stats bonuses
-        +Requirements req
-    }
+class Equipement {
+    +UUID id
+    +item tete
+    +item torse
+    +item jambes
+    +item bottes
+    +item arme
+    +Resistances resistancesTotales
+}
 
-    class Skill {
-        +UUID id
-        +Cost cost
-        +Cooldown cd
-        +Range range
-        +Targeting targeting
-        +Effects effects
-    }
+class item {
+    +UUID id
+    +TypeItem type
+    +Rareté rarete
+    +Statistiques bonus
+    +Requirements prerequis
+}
+
+class Competence {
+    +UUID id
+    +Cout cout
+    +Cooldown cd
+    +Portee portee
+    +Ciblage ciblage
+    +Effets effets
+}
 
     class QuestLog {
         +UUID id

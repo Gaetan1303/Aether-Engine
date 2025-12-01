@@ -4,27 +4,31 @@ classDiagram
 direction LR
 
 %% =========================
-%% VALUE OBJECTS & ENUMS
+%% VALUE OBJECTS & ENUMS (fr)
 %% =========================
 
-class UnitID {
+%% Note de synchronisation :
+%% Ce diagramme utilise le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
+%% Les définitions détaillées sont centralisées dans `/doc/Agrégats.md`.
+
+class IdentifiantUnite {
     "<<value object>>"
-    - value: string
-    + Value() string
-    + Equals(UnitID) bool
+    - valeur: string
+    + Valeur() string
+    + Egale(IdentifiantUnite) bool
 }
 
-class TeamID {
+class IdentifiantEquipe {
     "<<value object>>"
-    - value: string
-    + Value() string
-    + Equals(TeamID) bool
+    - valeur: string
+    + Valeur() string
+    + Egale(IdentifiantEquipe) bool
 }
 
-class SkillID {
+class IdentifiantCompetence {
     "<<value object>>"
-    - value: string
-    + Value() string
+    - valeur: string
+    + Valeur() string
 }
 
 class Position3D {
@@ -36,29 +40,29 @@ class Position3D {
 
 class Direction {
     "<<enum>>"
-    North
-    South
-    East
-    West
+    Nord
+    Sud
+    Est
+    Ouest
 }
 
-class DamageType {
+class TypeDegats {
     "<<enum>>"
-    Physical
-    Magical
-    TrueDamage
+    Physique
+    Magique
+    DegatsReels
 }
 
-class SkillType {
+class TypeCompetence {
     "<<enum>>"
-    Attack
+    Attaque
     Heal
     Buff
     Debuff
-    Movement
+    Mouvement
 }
 
-class ActionType {
+class TypeAction {
     "<<enum>>"
     Move
     Skill

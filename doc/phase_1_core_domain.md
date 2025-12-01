@@ -1,4 +1,9 @@
-# Phase 1 : Foundations & Contrats
+
+# Phase 1 : Fondations & Contrats
+
+> **Note de synchronisation** :
+> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/Agrégats.md`.
+> Les diagrammes et la documentation utilisent le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
 
 ## Objectif du Jalon
 
@@ -20,8 +25,8 @@ Le dépôt suit une structure propre au langage Go et inspirée des architecture
 |--------|----------------|---------|
 | `/cmd` | Point d'entrée de l'application | `main.go`, initialisation HTTP/GRPC |
 | `/internal` | Logique métier non exportable | Bounded Contexts, agrégats, services |
-| `/internal/combat` | Contexte de combat (Combat Engine) | Agrégats Battle, services du domaine, repositories |
-| `/internal/shared` | Domaines transverses | `UnitID`, `Position`, `Stats`, abstractions temporelles |
+| `/internal/combat` | Contexte de combat (Moteur de Combat) | Agrégats Combat, services du domaine, repositories |
+| `/internal/shared` | Domaines transverses | `IdentifiantUnite`, `Position`, `Statistiques`, abstractions temporelles |
 | `/pkg` | Code réutilisable et public | utilitaires, math, helpers |
 | `/tests` | Tests d'intégration / end-to-end | scénarios complets de combat |
 | `/docs` | Documentation | contrats, modèles, diagrammes, pipelines |
@@ -39,8 +44,8 @@ Trois Value Objects clés ont été définis pour la Phase 1 :
 | Artefact | Type DDD | Rôle | Statut |
 |---------|----------|------|--------|
 | `Position` | Value Object | Coordonnées X, Y, Z et leurs opérations (distances, voisinage). | Validé (3D stable) |
-| `UnitID` | Value Object | Identifiant unique typé d'une unité. | Validé |
-| `Stats` | Semi-mutable Value Object | Points de vie, mana, attaque, défense. | Validé |
+| `IdentifiantUnite` | Value Object | Identifiant unique typé d'une unité. | Validé |
+| `Statistiques` | Semi-mutable Value Object | Points de vie, mana, attaque, défense. | Validé |
 
 ### Clarification sur la dimension Z
 
@@ -82,7 +87,7 @@ Règles définies dès la Phase 1 :
 1. Aucun accès à l’horloge système dans le domaine.
 2. Aucun IO dans les agrégats ou services de domaine.
 3. Le random est uniquement fourni par une interface `RandomProvider`, seedable.
-4. Les évolutions temporelles sont orchestrées *uniquement* par `BattleTicker`.
+4. Les évolutions temporelles sont orchestrées *uniquement* par `TickerCombat`.
 5. Les entités doivent être intégralement sérialisables pour permettre le replay.
 
 Ces contrats préparent la Phase 2 (Combat Core Déterministe).
@@ -97,23 +102,24 @@ Quatre diagrammes cadrent la compréhension du moteur.
 
 Client → API Gateway → Aether-Engine (Go) → Base de données.
 
-## 4.2 Combat State Machine
+
+## 4.2 Machine d'états du Combat
 
 États principaux :
 ```
-Idle → Running → WaitingForAction → Resolving → Ended
+Attente → EnCours → AttenteAction → Résolution → Terminé
 ```
 
 ## 4.3 Cycle de vie d'une instance de combat
 
-- Création via "World/Map".
-- Construction du Battle Aggregate.
-- Enregistrement du Ticker.
+- Création via "Monde/Carte".
+- Construction de l'Agrégat Combat.
+- Enregistrement du TickerCombat.
 - Nettoyage en fin de combat.
 
-## 4.4 Fabric Rule Pipeline (esquisse)
+## 4.4 Pipeline de règles Fabric (esquisse)
 
-Input → Validation → Résolution → Effets → Post-Processing → Events
+Entrée → Validation → Résolution → Effets → Post-Traitement → Evénements
 
 Le pipeline sera finalisé en Phase 3.
 

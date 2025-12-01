@@ -1,4 +1,9 @@
+
 # Aether-Engine (Go + Gin)
+
+> **Note de synchronisation** :
+> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/Agrégats.md`.
+> Les diagrammes et la documentation utilisent le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
 
 Ce serveur est le cœur du projet Fantasy Tower, gérant toute la logique métier du jeu : combats tactiques au tour par tour, progression des personnages, système de quêtes, économie et règles complexes de gameplay. Conçu selon une architecture microservices scalable, Aether Engine garantit la cohérence des règles et la robustesse du gameplay.
 
@@ -14,75 +19,29 @@ Ce moteur fonctionne comme **serveur autoritatif** au sein de l'écosystème Fan
 
 ### Responsabilités principales
 
-- **Logique de combat** : Calculs de dégâts, résolution des actions, gestion des effets de statut
-- **Règles de jeu** : Validation des actions, application des contraintes métier
-- **Progression** : Gestion de l'expérience, montée de niveau, déverrouillage de compétences
-- **Économie** : Système de craft, gestion des récompenses, équilibrage des ressources
-- **Quêtes** : Orchestration des objectifs, validation des conditions de complétion
 
----
 
 ## Fonctionnalités principales
 
 ### Système de combat tactique
-- Combats au tour par tour sur grille tactique
-- Gestion du terrain avec altitude et types de cases
-- Système d'initiative basé sur la vitesse (CT/ATB)
-- Calcul des dégâts avec formules complexes (ATK, DEF, éléments, critique)
-- Effets de statut (poison, silence, hâte, berserk, etc.)
-- Zones d'effet et compétences à portée variable
-- Système de réactions et contre-attaques
 
 ### Gestion des personnages
-- Système de classes avec progression et spécialisations
-- Gestion des compétences et capacités
-- Équipement et inventaire avec contraintes par classe
-- Statistiques dynamiques (HP, MP, ATK, DEF, SPD, MAG, RES)
-- Talents passifs et arbres de compétences
 
 ### Système de quêtes
-- Quêtes principales et secondaires
-- Objectifs dynamiques et conditions de succès
-- Récompenses paramétrables (XP, or, objets)
-- Système de progression narrative
 
 ### Économie et craft
-- Gestion de la monnaie et des ressources
-- Système de craft avec recettes
-- Boutiques et marchands
-- Échanges entre joueurs (API Chat)
 
----
 
 ## Technologies utilisées
 
 ### Stack principal
-- **Langage** : Go 1.21+
-- **Framework HTTP** : Gin
-- **Architecture** : Microservices, Domain-Driven Design (DDD)
-- **Message Broker** : Kafka / RabbitMQ
-- **Cache** : Redis
-- **Base de données** : PostgreSQL (relationnel), MongoDB (flexible)
 
 ### Librairies & outils
-- **Validation** : go-playground/validator
-- **Tests** : Go test, testify
-- **Logging** : zap, logrus
-- **Documentation API** : Swagger (swaggo)
-- **Containerisation** : Docker
-- **Orchestration** : Kubernetes
-- **CI/CD** : GitHub Actions / GitLab CI
-- **Monitoring** : Prometheus, Grafana
 
----
 
 ## Installation
 
 ### Prérequis
-- Go >= 1.21
-- Docker & Docker Compose
-- PostgreSQL 14+
-- Redis 7+
 
 ### Installation locale
 
@@ -106,7 +65,6 @@ docker build -t aether-engine-go:latest .
 docker run -p 8080:8080 --env-file .env aether-engine-go:latest
 ```
 
----
 
 ## Configuration
 
@@ -128,7 +86,6 @@ API_KEY=your_api_key
 LOG_LEVEL=debug
 ```
 
----
 
 ## Utilisation
 
@@ -148,7 +105,6 @@ GIN_MODE=release go run main.go
 go test ./...
 ```
 
----
 
 ## Structure du projet (prévisionnelle)
 
@@ -177,7 +133,6 @@ server/
 ├── pkg/                         # Code public réutilisable
 ├── tests/
 └── go.mod
----
 
 ## API Documentation
 
@@ -187,42 +142,19 @@ Une fois le serveur démarré, la documentation Swagger est accessible à :
 http://localhost:8080/swagger/index.html
 ```
 
----
 
 ## Domain-Driven Design
 
-- **Agrégats principaux** :
-  - Combattant
-  - Grille de Combat
-  - Compétence
-  - Tour de Combat
-- **Bounded Contexts** : Combat, Personnage, Quête, Économie
-- **Event Sourcing** : Événements métier via Kafka
 
----
 
 ## Bonnes pratiques
-- Convention de code (golangci-lint)
-- Tests pour chaque fonctionnalité
-- Documentation des changements (CHANGELOG.md)
-- Respect des principes SOLID et DDD
 
----
 
 ## Licence
 
 Ce projet est sous licence El miminette
 
----
 
 ## Écosystème Fantasy Tower
 
-- **Front-End** : Angular
-- **API Observer** : État joueur/monde
-- **Aether Engine** : Logique métier (ce projet)
-- **Middleware API** : Instances/sessions
-- **Chat API** : Communication joueurs
-- **Big Data API** : Analyse/reporting
-- **API Adapter** : Passerelle services
 
----

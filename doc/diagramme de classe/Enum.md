@@ -3,61 +3,65 @@ classDiagram
 direction LR
 
 %% =========================
-%% ENUMS DU DOMAINE
+%% ENUMS DU DOMAINE (fr)
 %% =========================
 
-class BattleState {
+%% Note de synchronisation :
+%% Ce diagramme utilise le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
+%% Les définitions détaillées sont centralisées dans `/doc/Agrégats.md`.
+
+class EtatCombat {
     <<enum>>
-    Idle
-    Initializing
-    TurnBegin
-    ActionSelection
-    ActionResolve
-    TurnEnd
-    Finished
+    Attente
+    Initialisation
+    DebutTour
+    SelectionAction
+    ResolutionAction
+    FinTour
+    Termine
 }
 
-class TurnPhase {
+class PhaseTour {
     <<enum>>
-    Begin
-    Main
-    End
+    Debut
+    Principal
+    Fin
 }
 
-class ActionType {
+class TypeAction {
     <<enum>>
-    Move
-    Skill
-    Wait
+    Deplacement
+    Competence
+    Attente
 }
 
-class SkillType {
+class TypeCompetence {
     <<enum>>
-    Attack
+    Attaque
     Heal
     Buff
     Debuff
-    Movement
+    Mouvement
 }
 
-class DamageType {
+class TypeDegats {
     <<enum>>
-    Physical
-    Magical
-    TrueDamage
+    Physique
+    Magique
+    DegatsReels
 }
 
 class Direction {
     <<enum>>
-    North
-    South
-    East
-    West
+    Nord
+    Sud
+    Est
+    Ouest
 }
 
-class GridCellType {
+class TypeCaseGrille {
     <<enum>>
-    Empty
+    Vide
     Obstacle
     Hazard
 }

@@ -1,71 +1,77 @@
+
 # Agrégats Principaux – Aether-Engine
 
-> Architecture orientée DDD (Domain Driven Design for Games)
->
+> **Note de synchronisation** :
+> Ce fichier centralise la définition des agrégats, Value Objects et entités du domaine. Les diagrammes et la documentation utilisent le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
+
+> Architecture orientée DDD (Domain Driven Design appliqué au jeu vidéo)
 > Chaque agrégat protège ses invariants, garantit la cohérence métier et expose des méthodes métier pures.
 
 ---
 
-## 1. Player Aggregate (Joueur)
+
+## 1. Joueur (Player Aggregate)
 
 **Rôle** : Représente un joueur unique, ses états persistants et ses capacités MMO.
 
 **Contenu** :
 - Identité du joueur (UUID)
-- Stats de base : STR, DEX, INT, VIT…
-- Stats secondaires : Crit, Block, Dodge, Speed…
-- Ressources : HP, MP, Stamina
+- Statistiques de base : FOR, DEX, INT, VIT…
+- Statistiques secondaires : Crit, Blocage, Esquive, Vitesse…
+- Ressources : PV, PM, Stamina
 - Classe / Spécialisation
 - Progression : XP, niveau, talents
 - État monde : position, zone, instance
-- Status Effects actifs (buffs / debuffs)
-- Références : InventoryID, QuestLogID, EquipmentSetID
+- Effets de statut actifs (buffs / debuffs)
+- Références : InventaireID, JournalQuetesID, EquipementID
 
 **Invariants** :
-- HP ≥ 0
+- PV ≥ 0
 - Aucun équipement incompatible avec la classe
 - Capacité à agir déterminée par le statut
 - Les effets actifs expirent correctement
 
 ---
 
-## 2. CombatInstance Aggregate (Combat Tour par Tour)
 
-**Rôle** : Gestion complète du cycle de combat tour par tour (PvE, PvP, Raid, Dungeon).
+## 2. Instance de Combat (CombatInstance Aggregate)
+
+**Rôle** : Gestion complète du cycle de combat tour par tour (PvE, PvP, Raid, Donjon).
 
 **Contenu** :
 - ID unique d’une instance de combat
-- Liste des participants (Players & NPCs)
-- Initiative order
+- Liste des participants (Joueurs & PNJ)
+- Ordre d’initiative
 - Tour en cours
-- File des actions à résoudre (action queue)
-- Timeouts / Délais (anti AFK)
-- Log des événements de combat
-- Mode : PvE, PvP, Raid, Dungeon…
+- File des actions à résoudre
+- Délais (anti AFK)
+- Journal des événements de combat
+- Mode : PvE, PvP, Raid, Donjon…
 
 **Invariants** :
 - Un seul acteur possède la priorité d’action
 - Toute action doit être valide selon l’état actuel
 - Aucun participant ne peut agir après sa mort
-- Fin du combat : équipe A = 0 HP, équipe B = 0 HP, fuite validée
+- Fin du combat : équipe A = 0 PV, équipe B = 0 PV, fuite validée
 
 **Méthodes métier typiques** :
-- StartTurn(), EndTurn()
-- ResolveSkill()
-- ApplyDamage(), ApplyHeal()
-- ApplyStatusEffect()
-- NextActor()
+- debutTour(), finTour()
+- resoudreCompetence()
+- appliquerDegats(), appliquerSoin()
+- appliquerEffetStatut()
+- prochainActeur()
 
 ---
 
-## 3. Inventory Aggregate
+
+## 3. Inventaire (Inventory Aggregate)
 
 **Rôle** : Gestion de l’inventaire, du stockage, des limites de poids et des conteneurs.
 
 **Contenu** :
 - Liste d’items
 - Capacité / Poids
-- Gold / Currency
+- Or / Monnaie
 - Slots spéciaux (clé d’instance, consommables…)
 
 **Invariants** :
@@ -75,54 +81,58 @@
 
 ---
 
-## 4. Item Aggregate
 
-**Rôle** : Décrit un objet dans le monde (souvent Entity, mais agrégat pour les items complexes).
+## 4. item (Item Aggregate)
+
+**Rôle** : Décrit un objet dans le monde (souvent Entité, mais agrégat pour les items complexes).
 
 **Contenu** :
 - ID, type, catégorie
-- Stats bonus
+- Bonus de statistiques
 - Rareté
-- Requirements (niveau, classe…)
+- Prérequis (niveau, classe…)
 - Effets appliqués (en combat ou hors combat)
 
 **Invariants** :
-- Pas de stats négatives incohérentes
+- Pas de statistiques négatives incohérentes
 - Un objet équipé doit respecter le niveau requis
 
 ---
 
-## 5. EquipmentSet Aggregate
 
-**Rôle** : Ensemble des objets équipés par un joueur.
+## 5. Equipement (EquipmentSet Aggregate)
+
+**Rôle** : Ensemble des items équipés par un joueur.
 
 **Contenu** :
-- Head, Chest, Legs, Boots, Weapon…
+- Tête, Torse, Jambes, Bottes, Arme…
 - Résistances cumulées
 - Calculs de combat dérivés
 
 **Invariants** :
-- 1 seul objet par slot
+- 1 seul item par slot
 - Slot compatible avec la classe du joueur
 
 ---
 
-## 6. QuestLog / QuestProgress Aggregate
+
+## 6. Journal de Quêtes / Progression (QuestLog / QuestProgress Aggregate)
 
 **Rôle** : Gestion de l’avancement du joueur dans les quêtes.
 
 **Contenu** :
 - Liste des quêtes actives
-- État (Not started / In progress / Completed)
-- Objectifs : Kill, Collect, Explore, Trigger event
+- État (Non commencée / En cours / Terminée)
+- Objectifs : Tuer, Collecter, Explorer, Déclencher événement
 
 **Invariants** :
 - Une quête ne peut être complétée que si tous les objectifs sont remplis
-- Une quête ne peut être reprise après completion (sauf mode repeatable)
+- Une quête ne peut être reprise après complétion (sauf mode répétable)
 
 ---
 
-## 7. Skill / Ability Aggregate
+
+## 7. Compétence (Skill / Ability Aggregate)
 
 **Rôle** : Représente les compétences utilisables en combat.
 
@@ -130,40 +140,42 @@
 - Coût (mana, stamina…)
 - Cooldown
 - Portée
-- Règles de ciblage (self, ally, area, enemy…)
+- Règles de ciblage (soi, allié, zone, ennemi…)
 
 **Invariants** :
-- Utilisation impossible hors range
+- Utilisation impossible hors portée
 - Pas d’utilisation en cooldown
 - Le coût doit être disponible
 
 ---
 
-## 8. NPC / Monster Aggregate
+
+## 8. PNJ / Monstre (NPC / Monster Aggregate)
 
 **Rôle** : Représente les adversaires dans une instance PvE.
 
 **Contenu** :
-- Stats
-- LootTable
-- AIState
-- Behavior Script
+- Statistiques
+- Table de loot
+- Etat IA
+- Script de comportement
 
 **Invariants** :
-- Aucun monstre ne peut effectuer une action non définie par son AI
-- Le monstre disparait lorsque HP <= 0 et drop = résolu
+- Aucun monstre ne peut effectuer une action non définie par son IA
+- Le monstre disparait lorsque PV <= 0 et loot = résolu
 
 ---
 
-## 9. Economy / Trade Aggregate
+
+## 9. Economie / Echange (Economy / Trade Aggregate)
 
 **Rôle** : Gestion de l’économie persistante.
 
 **Contenu** :
-- Market Orders
-- Auction Items
+- Ordres de marché
+- Items en vente aux enchères
 - Prix dynamiques
-- Taxes / Fees
+- Taxes / Frais
 
 **Invariants** :
 - Pas de transaction sans fonds suffisants
@@ -171,14 +183,15 @@
 
 ---
 
-## 10. WorldState Aggregate (optionnel)
 
-**Rôle** : État persistant du monde partagé.
+## 10. Etat du Monde (WorldState Aggregate, optionnel)
+
+**Rôle** : Etat persistant du monde partagé.
 
 **Contenu** :
-- Événements dynamiques
+- Evénements dynamiques
 - Zones ouvertes / fermées
-- Time state (jour/nuit)
+- Etat temporel (jour/nuit)
 - Instances actives
 
 **Invariants** :
@@ -187,16 +200,17 @@
 
 ---
 
+
 ## TL;DR – Synthèse des agrégats clés pour Aether-Engine
 
-- **Player** : stats, talents, état du joueur
-- **CombatInstance** : moteur du tour par tour
-- **Inventory** : gestion des items
-- **EquipmentSet** : équipement porté
-- **QuestLog** : progression des quêtes
-- **Skill** : capacités utilisées en combat
-- **NPC/Monster** : adversaires PvE
-- **Economy** : transactions & marché
-- **WorldState** : état global du monde
+- **Joueur** : stats, talents, état du joueur
+- **Instance de Combat** : moteur du tour par tour
+- **Inventaire** : gestion des items
+- **Equipement** : équipement porté
+- **Journal de Quêtes** : progression des quêtes
+- **Compétence** : capacités utilisées en combat
+- **PNJ/Monstre** : adversaires PvE
+- **Economie** : transactions & marché
+- **Etat du Monde** : état global du monde
 
 > Ces agrégats couvrent tous les invariants et la logique métier essentielle du moteur tactique MMO Aether-Engine.

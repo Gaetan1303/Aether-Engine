@@ -1,62 +1,68 @@
+
+> **Note de synchronisation** :
+> Cette matrice d'événements utilise le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
+> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/Agrégats.md`.
+
 ```mermaid
 flowchart LR
 
-    subgraph Player[Player Aggregate]
-        PE1(PlayerLeveledUp)
-        PE2(PlayerStatsChanged)
-        PE3(PlayerMoved)
-        PE4(PlayerStateChanged)
-        PE5(PlayerDied)
-        PE6(PlayerEquippedItem)
-        PE7(PlayerUnequippedItem)
+
+    subgraph Joueur[Agrégat Joueur]
+        PE1(JoueurMonteNiveau)
+        PE2(StatsJoueurModifiées)
+        PE3(JoueurDéplacé)
+        PE4(EtatJoueurModifié)
+        PE5(JoueurMort)
+        PE6(JoueurEquipeItem)
+        PE7(JoueurDesequipeItem)
     end
 
-    subgraph Combat[CombatInstance Aggregate]
-        CE1(CombatStarted)
-        CE2(TurnStarted)
-        CE3(TurnEnded)
-        CE4(ActionDeclared)
-        CE5(ActionResolved)
-        CE6(DamageApplied)
-        CE7(HealApplied)
-        CE8(StatusApplied)
-        CE9(StatusExpired)
-        CE10(CombatEnded)
+    subgraph Combat[Agrégat Instance de Combat]
+        CE1(CombatCommencé)
+        CE2(TourCommencé)
+        CE3(TourTerminé)
+        CE4(ActionDéclarée)
+        CE5(ActionRésolue)
+        CE6(DégâtsAppliqués)
+        CE7(SoinAppliqué)
+        CE8(StatutAppliqué)
+        CE9(StatutExpiré)
+        CE10(CombatTerminé)
     end
 
-    subgraph Inventory[Inventory Aggregate]
-        IE1(ItemAddedToInventory)
-        IE2(ItemRemovedFromInventory)
-        IE3(InventoryCapacityReached)
+    subgraph Inventaire[Agrégat Inventaire]
+        IE1(ItemAjoutéInventaire)
+        IE2(ItemRetiréInventaire)
+        IE3(CapacitéInventaireAtteinte)
     end
 
-    subgraph Item[Item Aggregate]
-        IT1(ItemCreated)
-        IT2(ItemConsumed)
-        IT3(ItemEffectTriggered)
+    subgraph item[Agrégat item]
+        IT1(ItemCréé)
+        IT2(ItemConsommé)
+        IT3(EffetItemDéclenché)
     end
 
-    subgraph Equipment[EquipmentSet Aggregate]
-        EQ1(EquipmentUpdated)
-        EQ2(EquipmentBonusChanged)
+    subgraph Equipement[Agrégat Equipement]
+        EQ1(EquipementMisAJour)
+        EQ2(BonusEquipementModifié)
     end
 
-    subgraph Quest[QuestLog Aggregate]
-        QE1(QuestStarted)
-        QE2(QuestObjectiveProgressed)
-        QE3(QuestCompleted)
+    subgraph Quete[Agrégat Journal de Quêtes]
+        QE1(QueteCommencée)
+        QE2(ObjectifQueteProgressé)
+        QE3(QueteTerminée)
     end
 
-    subgraph Skill[Skill Aggregate]
-        SK1(SkillCooldownStarted)
-        SK2(SkillCooldownEnded)
-        SK3(SkillUsed)
+    subgraph Compétence[Agrégat Compétence]
+        SK1(CooldownCompétenceCommencé)
+        SK2(CooldownCompétenceTerminé)
+        SK3(CompétenceUtilisée)
     end
 
-    subgraph NPC[NPC/Monster Aggregate]
-        NE1(NpcActionTaken)
-        NE2(NpcDied)
-        NE3(NpcSpawned)
+    subgraph PNJ[Agrégat PNJ/Monstre]
+        NE1(ActionPnjEffectuée)
+        NE2(PnjMort)
+        NE3(PnjApparu)
     end
 
     subgraph Economy[Economy Aggregate]
