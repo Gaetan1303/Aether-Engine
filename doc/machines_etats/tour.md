@@ -1,6 +1,6 @@
 # Machine d'États : Cycle de Tour d'une Unité (Vue Focus Unité)
 
-> **📊 VUE DÉRIVÉE**
+> **VUE DÉRIVÉE**
 > Cette machine d'états se concentre sur le **cycle de vie d'un tour d'une unité spécifique**.
 > **Source de vérité** : `/doc/machines_etats/combat_core_p2.md`
 > **Mapping des états** : `/doc/machines_etats/mapping_vues.md`

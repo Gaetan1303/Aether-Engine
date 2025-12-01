@@ -1,6 +1,6 @@
 # Machine d'États : Action Joueur (Vue Interface/UX)
 
-> **📊 VUE DÉRIVÉE**
+> **VUE DÉRIVÉE**
 > Cette machine d'états représente le **flux d'interface utilisateur** pour la sélection d'une action.
 > **Source de vérité** : `/doc/machines_etats/combat_core_p2.md`
 > **Mapping des états** : `/doc/machines_etats/mapping_vues.md`

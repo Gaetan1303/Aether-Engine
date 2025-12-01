@@ -1,6 +1,6 @@
 # Machine d'États Canonique du Combat (Phase 2)
 
-> **⭐ SOURCE DE VÉRITÉ CANONIQUE**
+> **SOURCE DE VÉRITÉ CANONIQUE**
 > Cette machine d'états est la référence officielle pour l'implémentation du moteur de combat.
 > Toutes les autres machines d'états sont des **vues dérivées** pour des besoins spécifiques.
 > 

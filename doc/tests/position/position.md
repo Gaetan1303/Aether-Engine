@@ -321,7 +321,7 @@ func TestPosition_Immutability(t *testing.T) {
     y := p1.Y()
     
     // Tenter de modifier (ne compile pas grâce aux champs privés)
-    // p1.x = 10 // ❌ Erreur de compilation
+    // p1.x = 10 // Erreur de compilation
     
     // Vérifier que les valeurs n'ont pas changé
     assert.Equal(t, x, p1.X())

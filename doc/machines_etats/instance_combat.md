@@ -1,6 +1,6 @@
 # Machine d'États : Instance de Combat (Vue Simplifiée)
 
-> **📊 VUE DÉRIVÉE**
+> **VUE DÉRIVÉE**
 > Cette machine d'états est une **vue simplifiée** de la machine canonique.
 > **Source de vérité** : `/doc/machines_etats/combat_core_p2.md`
 > **Mapping des états** : `/doc/machines_etats/mapping_vues.md`

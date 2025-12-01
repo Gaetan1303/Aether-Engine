@@ -9,7 +9,7 @@ Ce document établit la correspondance entre les différentes représentations d
 ## Architecture des vues
 
 ```
-combat_core_p2.md (⭐ SOURCE DE VÉRITÉ CANONIQUE)
+combat_core_p2.md (SOURCE DE VÉRITÉ CANONIQUE)
     ├─> instance_combat.md (Vue simplifiée / Communication)
     ├─> tour.md (Vue focus unité / Débogage)
     └─> action_joueur.md (Vue UI/UX / Client)
@@ -24,7 +24,7 @@ combat_core_p2.md (⭐ SOURCE DE VÉRITÉ CANONIQUE)
 
 | État Canonique | État Simplifié | Transformation |
 |----------------|----------------|----------------|
-| Idle | Idle | ✓ Identique |
+| Idle | Idle | Identique |
 | Initializing | Initialized | Simplifié (détails d'init omis) |
 | Ready | RollInitiative | Renommé (focus sur l'initiative) |
 | Failed | *(omis)* | Simplifié (gestion d'erreur omise) |
@@ -130,7 +130,7 @@ combat_core_p2.md (⭐ SOURCE DE VÉRITÉ CANONIQUE)
 
 ```mermaid
 graph TD
-    subgraph Canonique["⭐ Vue Canonique (combat_core_p2.md)"]
+    subgraph Canonique["Vue Canonique (combat_core_p2.md)"]
         C1[Idle]
         C2[Initializing]
         C3[Ready]
@@ -145,7 +145,7 @@ graph TD
         C12[BattleEnded]
     end
 
-    subgraph Simplifiée["📊 Vue Simplifiée (instance_combat.md)"]
+    subgraph Simplifiée["Vue Simplifiée (instance_combat.md)"]
         S1[Idle]
         S2[Initialized]
         S3[RollInitiative]
@@ -159,7 +159,7 @@ graph TD
         S11[CombatEnd]
     end
 
-    subgraph Unité["🎯 Vue Focus Unité (tour.md)"]
+    subgraph Unité["Vue Focus Unité (tour.md)"]
         U1[AwaitingTurn]
         U2[TurnStart]
         U3[ActionSelection]
@@ -170,7 +170,7 @@ graph TD
         U8[TurnEnd]
     end
 
-    subgraph UI["🖥️ Vue UI (action_joueur.md)"]
+    subgraph UI["Vue UI (action_joueur.md)"]
         UI1[Idle]
         UI2[SelectingSkill]
         UI3[SelectingTarget]
