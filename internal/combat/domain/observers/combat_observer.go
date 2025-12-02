@@ -59,6 +59,36 @@ func (s *CombatSubject) GetObservers() []CombatObserver {
 	return s.observers
 }
 
+// Implémentation de ObserverProvider interface
+
+// Notify implémente ObserverProvider
+func (s *CombatSubject) Notify(eventType string, data interface{}) {
+	// Cast data vers CombatContext si possible
+	if context, ok := data.(*states.CombatContext); ok {
+		s.NotifyAll(eventType, context)
+	} else {
+		// Si data n'est pas un CombatContext, notifier avec nil
+		s.NotifyAll(eventType, nil)
+	}
+}
+
+// AttachObserver implémente ObserverProvider
+func (s *CombatSubject) AttachObserver(observer interface{}) {
+	if obs, ok := observer.(CombatObserver); ok {
+		s.Attach(obs)
+	}
+}
+
+// DetachObserver implémente ObserverProvider
+func (s *CombatSubject) DetachObserver(observerName string) {
+	s.Detach(observerName)
+}
+
+// ObserverCount implémente ObserverProvider
+func (s *CombatSubject) ObserverCount() int {
+	return len(s.observers)
+}
+
 // StateObserver surveille les transitions d'états
 type StateObserver struct {
 	name string

@@ -3,8 +3,10 @@ package application
 import (
 	"errors"
 
+	"github.com/aether-engine/aether-engine/internal/combat/combatfacade"
+	"github.com/aether-engine/aether-engine/internal/combat/combatinitializer"
 	"github.com/aether-engine/aether-engine/internal/combat/domain"
-	shared "github.com/aether-engine/aether-engine/internal/shared/domain"
+	"github.com/aether-engine/aether-engine/internal/combat/domain/states"
 )
 
 // CombatEngine est le service applicatif qui orchestre les combats
@@ -76,6 +78,12 @@ func (e *CombatEngineImpl) DemarrerCombat(cmd CommandeDemarrerCombat) (*CombatDT
 		return nil, err
 	}
 
+	// Initialiser les patterns Step C (State Machine, Commands, Observers, Validation)
+	initializer := combatinitializer.NewCombatInitializer(combat)
+	if err := initializer.InitializeAll(); err != nil {
+		return nil, err
+	}
+
 	// Sauvegarder les événements
 	events := combat.GetUncommittedEvents()
 	if err := e.eventStore.AppendEvents(cmd.CombatID, events, 0); err != nil {
@@ -97,7 +105,7 @@ func (e *CombatEngineImpl) DemarrerCombat(cmd CommandeDemarrerCombat) (*CombatDT
 	return &dto, nil
 }
 
-// ExecuterAction exécute une action dans un combat
+// ExecuterAction exécute une action dans un combat via la State Machine
 func (e *CombatEngineImpl) ExecuterAction(cmd CommandeExecuterAction) (*ResultatActionDTO, error) {
 	// Charger le combat depuis l'Event Store
 	events, err := e.eventStore.LoadEvents(cmd.CombatID)
@@ -110,15 +118,28 @@ func (e *CombatEngineImpl) ExecuterAction(cmd CommandeExecuterAction) (*Resultat
 		return nil, err
 	}
 
-	// Construire l'action
-	action := &domain.ActionCombat{
-		Type:     parseTypeAction(cmd.TypeAction),
-		ActeurID: domain.UnitID(cmd.ActeurID),
+	// Convertir le type d'action vers CommandType de la facade
+	var actionType combatfacade.CommandType
+	switch parseTypeAction(cmd.TypeAction) {
+	case domain.TypeActionAttaque:
+		actionType = combatfacade.CommandTypeAttack
+	case domain.TypeActionCompetence:
+		actionType = combatfacade.CommandTypeSkill
+	case domain.TypeActionDeplacement:
+		actionType = combatfacade.CommandTypeMove
+	case domain.TypeActionObjet:
+		actionType = combatfacade.CommandTypeItem
+	case domain.TypeActionPasser:
+		actionType = combatfacade.CommandTypeWait
+	default:
+		actionType = combatfacade.CommandTypeWait
 	}
 
+	// Préparer les paramètres pour ExecutePlayerAction
+	params := make(map[string]interface{})
+
 	if cmd.CibleID != nil {
-		cibleID := domain.UnitID(*cmd.CibleID)
-		action.CibleID = &cibleID
+		params["targetID"] = domain.UnitID(*cmd.CibleID)
 	}
 
 	if cmd.PositionCible != nil {
@@ -126,21 +147,32 @@ func (e *CombatEngineImpl) ExecuterAction(cmd CommandeExecuterAction) (*Resultat
 		if err != nil {
 			return nil, err
 		}
-		action.PositionCible = pos
+		params["targetX"] = pos.X()
+		params["targetY"] = pos.Y()
 	}
 
 	if cmd.CompetenceID != nil {
-		compID := domain.CompetenceID(*cmd.CompetenceID)
-		action.CompetenceID = &compID
+		params["skillID"] = string(*cmd.CompetenceID)
+		if cmd.CibleID != nil {
+			params["targetID"] = domain.UnitID(*cmd.CibleID)
+		}
 	}
 
 	if cmd.ObjetID != nil {
-		objID := shared.ObjetID(*cmd.ObjetID)
-		action.ObjetID = &objID
+		params["itemID"] = string(*cmd.ObjetID)
+		if cmd.CibleID != nil {
+			params["targetID"] = domain.UnitID(*cmd.CibleID)
+		}
 	}
 
-	// Exécuter l'action
-	if err := combat.ExecuterAction(action); err != nil {
+	// Exécuter via combatfacade (architecture Step C)
+	result, err := combatfacade.ExecutePlayerAction(
+		combat,
+		domain.UnitID(cmd.ActeurID),
+		actionType,
+		params,
+	)
+	if err != nil {
 		return nil, err
 	}
 
@@ -157,21 +189,19 @@ func (e *CombatEngineImpl) ExecuterAction(cmd CommandeExecuterAction) (*Resultat
 		}
 	}
 
-	// Clear uncommitted events
 	combat.ClearUncommittedEvents()
 
-	// Retourner le résultat
-	// TODO: Extraire le résultat réel
+	// Convertir le résultat vers DTO
 	resultat := &ResultatActionDTO{
-		Succes:  true,
-		Message: "Action exécutée avec succès",
-		Effets:  make([]EffetDTO, 0),
+		Succes:  result.Success,
+		Message: result.Message,
+		Effets:  []EffetDTO{}, // TODO: implémenter convertEffectsToDTO si nécessaire
 	}
 
 	return resultat, nil
 }
 
-// PasserTour passe au tour suivant
+// PasserTour passe au tour suivant via la State Machine
 func (e *CombatEngineImpl) PasserTour(cmd CommandePasserTour) error {
 	// Charger le combat
 	events, err := e.eventStore.LoadEvents(cmd.CombatID)
@@ -184,8 +214,15 @@ func (e *CombatEngineImpl) PasserTour(cmd CommandePasserTour) error {
 		return err
 	}
 
-	// Passer au tour suivant
-	if err := combat.TourSuivant(); err != nil {
+	// Récupérer la State Machine
+	sm := combatfacade.GetStateMachine(combat)
+	if sm == nil {
+		return errors.New("state machine non initialisée")
+	}
+
+	// Déclencher l'événement de fin de tour
+	event := states.StateEvent{Type: states.EventTurnComplete}
+	if err := sm.HandleEvent(event); err != nil {
 		return err
 	}
 
@@ -207,7 +244,7 @@ func (e *CombatEngineImpl) PasserTour(cmd CommandePasserTour) error {
 	return nil
 }
 
-// TerminerCombat termine un combat
+// TerminerCombat termine un combat via la State Machine
 func (e *CombatEngineImpl) TerminerCombat(cmd CommandeTerminerCombat) error {
 	// Charger le combat
 	events, err := e.eventStore.LoadEvents(cmd.CombatID)
@@ -220,10 +257,20 @@ func (e *CombatEngineImpl) TerminerCombat(cmd CommandeTerminerCombat) error {
 		return err
 	}
 
-	// Terminer le combat
-	if err := combat.Terminer(); err != nil {
+	// Récupérer la State Machine
+	sm := combatfacade.GetStateMachine(combat)
+	if sm == nil {
+		return errors.New("state machine non initialisée")
+	}
+
+	// Déclencher l'événement de finalisation
+	event := states.StateEvent{Type: states.EventFinalizeCombat}
+	if err := sm.HandleEvent(event); err != nil {
 		return err
 	}
+
+	// Distribuer les récompenses
+	combat.DistribuerRecompenses()
 
 	// Sauvegarder les événements
 	newEvents := combat.GetUncommittedEvents()

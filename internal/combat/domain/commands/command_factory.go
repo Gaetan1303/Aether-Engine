@@ -66,3 +66,6 @@ func (f *CommandFactory) CreateFleeCommand(actor *domain.Unite) (Command, error)
 func (f *CommandFactory) CreateWaitCommand(actor *domain.Unite) (Command, error) {
 	return NewWaitCommand(actor, f.combat), nil
 }
+
+// Implémentation marker de CommandFactoryProvider
+// Les méthodes concrètes (CreateMoveCommand, CreateAttackCommand, etc.) sont déjà définies

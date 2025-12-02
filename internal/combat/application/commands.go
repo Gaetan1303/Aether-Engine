@@ -241,8 +241,8 @@ func FromCombat(combat *domain.Combat) CombatDTO {
 		Etat:        combat.Etat().String(),
 		Equipes:     equipes,
 		TourActuel:  combat.TourActuel(),
-		UniteActive: string(combat.UniteActive()),
-		Phase:       "", // TODO: Ajouter Phase() au Combat
+		UniteActive: "", // LEGACY - Géré par State Machine maintenant
+		Phase:       "", // LEGACY - Géré par State Machine maintenant
 		Version:     combat.Version(),
 	}
 }

@@ -162,6 +162,22 @@ func (sm *CombatStateMachine) CurrentState() CombatState {
 	return sm.context.CurrentState
 }
 
+// GetCurrentState implémente StateMachineProvider interface
+func (sm *CombatStateMachine) GetCurrentState() string {
+	if sm.context.CurrentState == nil {
+		return "UNKNOWN"
+	}
+	return sm.context.CurrentState.Name()
+}
+
+// CanTransitionTo implémente StateMachineProvider interface
+func (sm *CombatStateMachine) CanTransitionTo(stateName string) bool {
+	if sm.context.CurrentState == nil {
+		return false
+	}
+	return sm.context.CurrentState.CanTransitionTo(stateName)
+}
+
 // TransitionTo effectue une transition vers un nouvel état
 // Respect du Open/Closed Principle - pas besoin de modifier pour ajouter des états
 func (sm *CombatStateMachine) TransitionTo(newState CombatState) error {

@@ -1,0 +1,220 @@
+package domain
+
+import (
+	"errors"
+	"time"
+
+	"github.com/aether-engine/aether-engine/internal/combat/domain/commands"
+	"github.com/aether-engine/aether-engine/internal/combat/domain/observers"
+	"github.com/aether-engine/aether-engine/internal/combat/domain/states"
+)
+
+// Step C - Méthodes Setup pour éviter les cycles d'imports
+// Ces méthodes acceptent interface{} pour éviter les imports circulaires
+
+// SetStateMachine initialise la state machine (appelé depuis combatinitializer)
+func (c *Combat) SetStateMachine(sm interface{}) {
+	c.stateMachine = sm
+}
+
+// SetCommandInvoker initialise le command invoker (appelé depuis combatinitializer)
+func (c *Combat) SetCommandInvoker(invoker interface{}) {
+	c.commandInvoker = invoker
+}
+
+// SetCommandFactory initialise la command factory (appelé depuis combatinitializer)
+func (c *Combat) SetCommandFactory(factory interface{}) {
+	c.commandFactory = factory
+}
+
+// SetObserverSubject initialise le système d'observateurs (appelé depuis combatinitializer)
+func (c *Combat) SetObserverSubject(subject interface{}) {
+	c.observerSubject = subject
+}
+
+// SetValidationChain initialise la chaîne de validation (appelé depuis combatinitializer)
+func (c *Combat) SetValidationChain(chain interface{}) {
+	c.validationChain = chain
+}
+
+// GetStateMachine retourne la state machine (type concret pour les tests)
+func (c *Combat) GetStateMachine() *states.CombatStateMachine {
+	if sm, ok := c.stateMachine.(*states.CombatStateMachine); ok {
+		return sm
+	}
+	return nil
+}
+
+// GetCommandInvoker retourne le command invoker
+func (c *Combat) GetCommandInvoker() *commands.CommandInvoker {
+	if inv, ok := c.commandInvoker.(*commands.CommandInvoker); ok {
+		return inv
+	}
+	return nil
+}
+
+// GetCommandFactory retourne la command factory
+func (c *Combat) GetCommandFactory() *commands.CommandFactory {
+	if factory, ok := c.commandFactory.(*commands.CommandFactory); ok {
+		return factory
+	}
+	return nil
+}
+
+// GetObserverSubject retourne le subject des observateurs
+func (c *Combat) GetObserverSubject() *observers.CombatSubject {
+	if subject, ok := c.observerSubject.(*observers.CombatSubject); ok {
+		return subject
+	}
+	return nil
+}
+
+// AttachObserver ajoute un observateur au combat
+func (c *Combat) AttachObserver(observer observers.CombatObserver) {
+	if subject := c.GetObserverSubject(); subject != nil {
+		subject.Attach(observer)
+	}
+}
+
+// DetachObserver retire un observateur
+func (c *Combat) DetachObserver(observerName string) {
+	if subject := c.GetObserverSubject(); subject != nil {
+		subject.Detach(observerName)
+	}
+}
+
+// NotifyObservers notifie tous les observateurs
+func (c *Combat) NotifyObservers(eventType string, context *states.CombatContext) {
+	if subject := c.GetObserverSubject(); subject != nil {
+		subject.NotifyAll(eventType, context)
+	}
+}
+
+// InitializeCombatWithStateMachine initialise la state machine et lance le combat
+func (c *Combat) InitializeCombatWithStateMachine() error {
+	sm := c.GetStateMachine()
+	if sm == nil {
+		return errors.New("state machine non configurée, utilisez CombatInitializer")
+	}
+
+	// Démarrer le combat: Idle → Initializing → Ready
+	if err := sm.HandleEvent(states.StateEvent{
+		Type:      states.EventStartBattle,
+		Timestamp: time.Now().Unix(),
+	}); err != nil {
+		return err
+	}
+
+	// Après l'initialisation, déclencher la setup completion
+	if err := sm.HandleEvent(states.StateEvent{
+		Type:      states.EventSetupComplete,
+		Timestamp: time.Now().Unix(),
+	}); err != nil {
+		return err
+	}
+
+	c.etat = EtatEnCours
+	c.RaiseEvent(NewCombatDemarreEvent(c.id, c.tourActuel, []UnitID{}))
+
+	return nil
+}
+
+// ExecutePlayerAction exécute une action de joueur via la state machine
+func (c *Combat) ExecutePlayerAction(actorID UnitID, actionType commands.CommandType, params map[string]interface{}) (*commands.CommandResult, error) {
+	invoker := c.GetCommandInvoker()
+	factory := c.GetCommandFactory()
+
+	if invoker == nil || factory == nil {
+		return nil, errors.New("système de commandes non configuré")
+	}
+
+	// Trouver l'acteur
+	acteur := c.TrouverUnite(actorID)
+	if acteur == nil {
+		return nil, errors.New("acteur introuvable")
+	}
+
+	// Créer la commande via la factory
+	var cmd commands.Command
+	var err error
+
+	switch actionType {
+	case commands.CommandTypeMove:
+		targetX, okX := params["targetX"].(int)
+		targetY, okY := params["targetY"].(int)
+		if !okX || !okY {
+			return nil, errors.New("paramètres targetX et targetY requis pour Move")
+		}
+		cmd, err = factory.CreateMoveCommand(acteur, targetX, targetY)
+
+	case commands.CommandTypeAttack:
+		targetID, ok := params["targetID"].(UnitID)
+		if !ok {
+			return nil, errors.New("paramètre targetID requis pour Attack")
+		}
+		cmd, err = factory.CreateAttackCommand(acteur, targetID)
+
+	case commands.CommandTypeSkill:
+		skillID, okSkill := params["skillID"].(string)
+		targetIDs, okTargets := params["targetIDs"].([]UnitID)
+		if !okSkill || !okTargets {
+			return nil, errors.New("paramètres skillID et targetIDs requis pour Skill")
+		}
+		cmd, err = factory.CreateSkillCommand(acteur, skillID, targetIDs)
+
+	case commands.CommandTypeItem:
+		itemID, okItem := params["itemID"].(string)
+		targetID, okTarget := params["targetID"].(UnitID)
+		if !okItem || !okTarget {
+			return nil, errors.New("paramètres itemID et targetID requis pour Item")
+		}
+		cmd, err = factory.CreateItemCommand(acteur, itemID, targetID)
+
+	case commands.CommandTypeFlee:
+		cmd, err = factory.CreateFleeCommand(acteur)
+
+	case commands.CommandTypeWait:
+		cmd, err = factory.CreateWaitCommand(acteur)
+
+	default:
+		return nil, errors.New("type d'action inconnu")
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Exécuter la commande via l'invoker (qui gère validation + execution + history)
+	result, err := invoker.Execute(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// GetCurrentStateString retourne le nom de l'état actuel
+func (c *Combat) GetCurrentStateString() string {
+	if sm := c.GetStateMachine(); sm != nil {
+		if state := sm.GetCurrentState(); state != nil {
+			return state.Name()
+		}
+	}
+	return "NOT_INITIALIZED"
+}
+
+// GetStateHistoryList retourne l'historique des états
+func (c *Combat) GetStateHistoryList() []states.StateTransition {
+	if sm := c.GetStateMachine(); sm != nil {
+		return sm.GetStateHistory()
+	}
+	return nil
+}
+
+// GetCommandHistoryList retourne l'historique des commandes
+func (c *Combat) GetCommandHistoryList() []commands.Command {
+	if invoker := c.GetCommandInvoker(); invoker != nil {
+		return invoker.GetHistory()
+	}
+	return nil
+}

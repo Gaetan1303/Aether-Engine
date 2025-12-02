@@ -10,61 +10,70 @@ import (
 type UnitID string
 
 // Unite représente un combattant dans le combat
+// Composition Pattern - Délègue aux composants spécialisés
+// Single Responsibility Principle - Coordonne, ne gère pas directement
 type Unite struct {
-	id                 UnitID
-	nom                string
-	teamID             TeamID
-	stats              *shared.Stats
-	statsActuelles     *shared.Stats // Stats actuelles (modifiées par buffs/debuffs)
-	position           *shared.Position
-	competences        []*Competence
-	statuts            []*shared.Statut
-	inventaire         []shared.ObjetID
-	estEliminee        bool
+	// Identité
+	id     UnitID
+	nom    string
+	teamID TeamID
+
+	// Position
+	position *shared.Position
+
+	// Composants (Composition Pattern)
+	combat    *UnitCombatBehavior
+	statuses  *UnitStatusManager
+	inventory *UnitInventory
+
+	// État du tour
 	deplacementRestant int
 	actionsRestantes   int
 }
 
 // NewUnite crée une nouvelle unité
+// Utilise la Composition pour déléguer aux composants spécialisés
 func NewUnite(id UnitID, nom string, teamID TeamID, stats *shared.Stats, position *shared.Position) *Unite {
 	return &Unite{
-		id:                 id,
-		nom:                nom,
-		teamID:             teamID,
-		stats:              stats,
-		statsActuelles:     stats.Clone(),
-		position:           position,
-		competences:        make([]*Competence, 0),
-		statuts:            make([]*shared.Statut, 0),
-		inventaire:         make([]shared.ObjetID, 0),
-		estEliminee:        false,
+		id:       id,
+		nom:      nom,
+		teamID:   teamID,
+		position: position,
+
+		// Composition Pattern - Créer les composants
+		combat:    NewUnitCombatBehavior(stats),
+		statuses:  NewUnitStatusManager(),
+		inventory: NewUnitInventory(),
+
+		// État initial du tour
 		deplacementRestant: stats.MOV,
-		actionsRestantes:   1, // 1 action par tour par défaut
+		actionsRestantes:   1,
 	}
 }
 
-// Getters
-func (u *Unite) ID() UnitID                    { return u.id }
-func (u *Unite) Nom() string                   { return u.nom }
-func (u *Unite) TeamID() TeamID                { return u.teamID }
-func (u *Unite) Stats() *shared.Stats          { return u.stats }
-func (u *Unite) StatsActuelles() *shared.Stats { return u.statsActuelles }
-func (u *Unite) Position() *shared.Position    { return u.position }
-func (u *Unite) Competences() []*Competence    { return u.competences }
-func (u *Unite) Statuts() []*shared.Statut     { return u.statuts }
-func (u *Unite) EstEliminee() bool             { return u.estEliminee }
+// Getters basiques
+func (u *Unite) ID() UnitID                 { return u.id }
+func (u *Unite) Nom() string                { return u.nom }
+func (u *Unite) TeamID() TeamID             { return u.teamID }
+func (u *Unite) Position() *shared.Position { return u.position }
+
+// Getters délégués aux composants (Composition Pattern)
+func (u *Unite) Stats() *shared.Stats          { return u.combat.BaseStats() }
+func (u *Unite) StatsActuelles() *shared.Stats { return u.combat.CurrentStats() }
+func (u *Unite) HPActuels() int                { return u.combat.CurrentHP() }
+func (u *Unite) Competences() []*Competence    { return u.inventory.Skills() }
+func (u *Unite) Statuts() []*shared.Statut     { return u.statuses.Statuses() }
+func (u *Unite) EstEliminee() bool             { return u.combat.IsEliminated() }
 
 // PeutAgir vérifie si l'unité peut effectuer une action
 func (u *Unite) PeutAgir() bool {
-	if u.estEliminee {
+	if u.combat.IsEliminated() {
 		return false
 	}
 
-	// Vérifier les statuts bloquants (Stun, Sleep, etc.)
-	for _, statut := range u.statuts {
-		if statut.BloqueActions() {
-			return true
-		}
+	// Déléguer aux composants
+	if u.statuses.BlocksActions() {
+		return false
 	}
 
 	return u.actionsRestantes > 0
@@ -72,15 +81,13 @@ func (u *Unite) PeutAgir() bool {
 
 // PeutSeDeplacer vérifie si l'unité peut se déplacer
 func (u *Unite) PeutSeDeplacer() bool {
-	if u.estEliminee {
+	if u.combat.IsEliminated() {
 		return false
 	}
 
-	// Vérifier les statuts bloquants (Root, Stun, etc.)
-	for _, statut := range u.statuts {
-		if statut.BloqueDeplacement() {
-			return false
-		}
+	// Déléguer aux composants
+	if u.statuses.BlocksMovement() {
+		return false
 	}
 
 	return u.deplacementRestant > 0
@@ -88,183 +95,105 @@ func (u *Unite) PeutSeDeplacer() bool {
 
 // EstBloqueDeplacement vérifie si l'unité est bloquée pour le déplacement
 func (u *Unite) EstBloqueDeplacement() bool {
-	if u.estEliminee {
+	if u.combat.IsEliminated() {
 		return true
 	}
 
-	// Vérifier les statuts bloquants (Root, Stun, etc.)
-	for _, statut := range u.statuts {
-		if statut.BloqueDeplacement() {
-			return true
-		}
-	}
-
-	return false
+	// Déléguer au gestionnaire de statuts
+	return u.statuses.BlocksMovement()
 }
 
-// DeplacerVers déplace l'unité vers une position spécifique sans vérification de portée
+// DeplacerVers déplace l'unité vers une position spécifique
 func (u *Unite) DeplacerVers(nouvellePosition *shared.Position) {
 	u.position = nouvellePosition
 }
 
-// RecevoirDegats applique des dégâts à l'unité
+// RecevoirDegats applique des dégâts à l'unité (délègue au composant combat)
 func (u *Unite) RecevoirDegats(degats int) {
-	// Soustraire de HP
-	u.statsActuelles.HP -= degats
-
-	// Vérifier si éliminée
-	if u.statsActuelles.HP <= 0 {
-		u.statsActuelles.HP = 0
-		u.estEliminee = true
-	}
+	u.combat.TakeDamage(degats)
 }
 
-// RecevoirSoin applique un soin à l'unité
+// RecevoirSoin applique un soin à l'unité (délègue au composant combat)
 func (u *Unite) RecevoirSoin(soin int) {
-	if u.estEliminee {
-		return // Pas de soin si mort
-	}
-
-	u.statsActuelles.HP += soin
-
-	// Cap aux HP max
-	if u.statsActuelles.HP > u.stats.HP {
-		u.statsActuelles.HP = u.stats.HP
-	}
+	u.combat.Heal(soin)
 }
 
 // Soigner est un alias de RecevoirSoin (pour compatibilité)
 func (u *Unite) Soigner(soin int) {
-	u.RecevoirSoin(soin)
+	u.combat.Heal(soin)
 }
 
-// AjouterStatut ajoute un statut à l'unité
+// AjouterStatut ajoute un statut à l'unité (délègue au composant)
 func (u *Unite) AjouterStatut(statut *shared.Statut) error {
-	if u.estEliminee {
+	if u.combat.IsEliminated() {
 		return errors.New("unité éliminée")
 	}
 
-	// Vérifier si le statut existe déjà
-	for _, s := range u.statuts {
-		if s.Type() == statut.Type() {
-			// Refresh ou stack
-			return s.Refresh(statut.Duree())
-		}
-	}
-
-	// Ajouter nouveau statut
-	u.statuts = append(u.statuts, statut)
-
-	// Appliquer l'effet initial
-	statut.AppliquerEffet(u)
-
-	return nil
+	// Déléguer au gestionnaire de statuts
+	return u.statuses.AddStatus(statut)
 }
 
-// RetirerStatut retire un statut de l'unité
+// RetirerStatut retire un statut de l'unité (délègue au composant)
 func (u *Unite) RetirerStatut(typeStatut shared.TypeStatut) {
-	for i, statut := range u.statuts {
-		if statut.Type() == typeStatut {
-			// Retirer l'effet
-			statut.RetirerEffet(u)
-
-			// Retirer du slice
-			u.statuts = append(u.statuts[:i], u.statuts[i+1:]...)
-			return
-		}
-	}
+	u.statuses.RemoveStatus(typeStatut)
 }
 
-// TraiterStatuts traite tous les statuts actifs (début de tour)
+// TraiterStatuts traite tous les statuts actifs (délègue au composant)
 func (u *Unite) TraiterStatuts() []shared.EffetStatut {
-	effets := make([]shared.EffetStatut, 0)
-
-	// Traiter chaque statut
-	for i := len(u.statuts) - 1; i >= 0; i-- {
-		statut := u.statuts[i]
-
-		// Appliquer l'effet périodique
-		effet := statut.AppliquerEffetPeriodique(u)
-		if effet != nil {
-			effets = append(effets, *effet)
-		}
-
-		// Décrémenter la durée
-		statut.DecrémenterDuree()
-
-		// Retirer si expiré
-		if statut.EstExpire() {
-			statut.RetirerEffet(u)
-			u.statuts = append(u.statuts[:i], u.statuts[i+1:]...)
-		}
-	}
-
-	return effets
+	// Déléguer au gestionnaire de statuts
+	return u.statuses.ProcessStatuses(u)
 }
 
-// AjouterCompetence ajoute une compétence à l'unité
+// AjouterCompetence ajoute une compétence à l'unité (délègue au composant)
 func (u *Unite) AjouterCompetence(comp *Competence) error {
-	// Vérifier que la compétence n'existe pas déjà
-	for _, c := range u.competences {
-		if c.ID() == comp.ID() {
-			return errors.New("compétence déjà apprise")
-		}
-	}
-
-	u.competences = append(u.competences, comp)
-	return nil
+	return u.inventory.AddSkill(comp)
 }
 
-// ObtenirCompetence récupère une compétence par ID
+// ObtenirCompetence récupère une compétence par ID (délègue au composant)
 func (u *Unite) ObtenirCompetence(id CompetenceID) *Competence {
-	for _, comp := range u.competences {
-		if comp.ID() == id {
-			return comp
-		}
-	}
-	return nil
+	return u.inventory.GetSkill(id)
 }
 
 // PeutUtiliserCompetence vérifie si l'unité peut utiliser une compétence
 func (u *Unite) PeutUtiliserCompetence(compID CompetenceID) bool {
-	comp := u.ObtenirCompetence(compID)
+	comp := u.inventory.GetSkill(compID)
 	if comp == nil {
 		return false
 	}
 
-	// Vérifier les coûts
-	if comp.CoutMP() > u.statsActuelles.MP {
+	// Vérifier les coûts via le composant combat
+	if comp.CoutMP() > u.combat.CurrentMP() {
 		return false
 	}
 
-	if comp.CoutStamina() > u.statsActuelles.Stamina {
+	if comp.CoutStamina() > u.combat.CurrentStats().Stamina {
 		return false
 	}
 
-	// Vérifier le cooldown
-	if comp.EstEnCooldown() {
-		return false
-	}
-
-	return true
+	// Vérifier le cooldown via le composant inventory
+	return u.inventory.IsSkillReady(compID)
 }
 
 // UtiliserCompetence utilise une compétence
 func (u *Unite) UtiliserCompetence(compID CompetenceID) error {
-	comp := u.ObtenirCompetence(compID)
-	if comp == nil {
-		return errors.New("compétence inconnue")
-	}
-
 	if !u.PeutUtiliserCompetence(compID) {
 		return errors.New("impossible d'utiliser cette compétence")
 	}
 
-	// Déduire les coûts
-	u.statsActuelles.MP -= comp.CoutMP()
-	u.statsActuelles.Stamina -= comp.CoutStamina()
+	comp := u.inventory.GetSkill(compID)
+	if comp == nil {
+		return errors.New("compétence inconnue")
+	}
 
-	// Activer le cooldown
+	// Déduire les coûts via le composant combat
+	if err := u.combat.ConsumeMP(comp.CoutMP()); err != nil {
+		return err
+	}
+	if err := u.combat.ConsumeStamina(comp.CoutStamina()); err != nil {
+		return err
+	}
+
+	// Activer le cooldown via le composant inventory
 	comp.ActiverCooldown()
 
 	return nil
@@ -288,110 +217,116 @@ func (u *Unite) SeDeplacer(nouvellePosition *shared.Position, coutDeplacement in
 
 // RegenererStatut régénère les stats périodiquement
 func (u *Unite) RegenererStatut() {
-	if u.estEliminee {
+	if u.combat.IsEliminated() {
 		return
 	}
 
 	// Régénération MP (exemple: 10% par tour)
-	regenMP := u.stats.MP / 10
-	u.statsActuelles.MP += regenMP
-	if u.statsActuelles.MP > u.stats.MP {
-		u.statsActuelles.MP = u.stats.MP
-	}
+	baseStats := u.combat.BaseStats()
+	regenMP := baseStats.MP / 10
+	u.combat.RestoreMP(regenMP)
 
 	// Régénération Stamina (exemple: 20% par tour)
-	regenStamina := u.stats.Stamina / 5
-	u.statsActuelles.Stamina += regenStamina
-	if u.statsActuelles.Stamina > u.stats.Stamina {
-		u.statsActuelles.Stamina = u.stats.Stamina
+	// Note: Stamina sera géré via combat component
+	regenStamina := baseStats.Stamina / 5
+	currentStats := u.combat.CurrentStats()
+	currentStats.Stamina += regenStamina
+	if currentStats.Stamina > baseStats.Stamina {
+		currentStats.Stamina = baseStats.Stamina
 	}
 }
 
 // NouveauTour réinitialise les compteurs de tour
 func (u *Unite) NouveauTour() {
 	u.actionsRestantes = 1
-	u.deplacementRestant = u.statsActuelles.MOV
+	u.deplacementRestant = u.combat.CurrentStats().MOV
 
-	// Traiter les statuts
+	// Traiter les statuts via composant
 	u.TraiterStatuts()
+
+	// Décrémenter les cooldowns
+	u.inventory.DecrementAllCooldowns()
 
 	// Régénération
 	u.RegenererStatut()
 
 	// Décrémenter cooldowns des compétences
-	for _, comp := range u.competences {
-		comp.DecrémenterCooldown()
-	}
+	u.inventory.DecrementAllCooldowns()
 }
 
 // AppliquerModificateurStat applique un modificateur temporaire à une stat
 func (u *Unite) AppliquerModificateurStat(modificateur *shared.ModificateurStat) {
+	stats := u.combat.CurrentStats()
 	switch modificateur.Stat {
 	case "ATK":
-		u.statsActuelles.ATK += modificateur.Valeur
+		stats.ATK += modificateur.Valeur
 	case "DEF":
-		u.statsActuelles.DEF += modificateur.Valeur
+		stats.DEF += modificateur.Valeur
 	case "MATK":
-		u.statsActuelles.MATK += modificateur.Valeur
+		stats.MATK += modificateur.Valeur
 	case "MDEF":
-		u.statsActuelles.MDEF += modificateur.Valeur
+		stats.MDEF += modificateur.Valeur
 	case "SPD":
-		u.statsActuelles.SPD += modificateur.Valeur
+		stats.SPD += modificateur.Valeur
 	case "MOV":
-		u.statsActuelles.MOV += modificateur.Valeur
+		stats.MOV += modificateur.Valeur
 	}
 }
 
 // RetirerModificateurStat retire un modificateur temporaire
 func (u *Unite) RetirerModificateurStat(modificateur *shared.ModificateurStat) {
+	stats := u.combat.CurrentStats()
 	switch modificateur.Stat {
 	case "ATK":
-		u.statsActuelles.ATK -= modificateur.Valeur
+		stats.ATK -= modificateur.Valeur
 	case "DEF":
-		u.statsActuelles.DEF -= modificateur.Valeur
+		stats.DEF -= modificateur.Valeur
 	case "MATK":
-		u.statsActuelles.MATK -= modificateur.Valeur
+		stats.MATK -= modificateur.Valeur
 	case "MDEF":
-		u.statsActuelles.MDEF -= modificateur.Valeur
+		stats.MDEF -= modificateur.Valeur
 	case "SPD":
-		u.statsActuelles.SPD -= modificateur.Valeur
+		stats.SPD -= modificateur.Valeur
 	case "MOV":
-		u.statsActuelles.MOV -= modificateur.Valeur
+		stats.MOV -= modificateur.Valeur
 	}
 }
 
 // RecalculerStats recalcule les stats actuelles en appliquant tous les modificateurs
 func (u *Unite) RecalculerStats() {
-	// Partir des stats de base
-	u.statsActuelles = u.stats.Clone()
+	// Réinitialiser aux stats de base
+	baseStats := u.combat.BaseStats()
+	currentStats := u.combat.CurrentStats()
+
+	// Copier les stats de base
+	currentStats.HP = baseStats.HP
+	currentStats.MP = baseStats.MP
+	currentStats.ATK = baseStats.ATK
+	currentStats.DEF = baseStats.DEF
+	currentStats.SPD = baseStats.SPD
+	currentStats.MATK = baseStats.MATK
+	currentStats.MDEF = baseStats.MDEF
+	currentStats.MOV = baseStats.MOV
+	currentStats.Stamina = baseStats.Stamina
 
 	// Appliquer tous les modificateurs des statuts
-	for _, statut := range u.statuts {
+	for _, statut := range u.statuses.Statuses() {
 		for _, mod := range statut.Modificateurs() {
 			u.AppliquerModificateurStat(&mod)
 		}
 	}
 }
 
-// HPActuels retourne les HP actuels de l'unité
-func (u *Unite) HPActuels() int {
-	return u.statsActuelles.HP
+// HPActuels est déjà défini dans les getters (ligne 63)
+
+// ConsommerMP consomme des points de magie (délègue au composant)
+func (u *Unite) ConsommerMP(montant int) error {
+	return u.combat.ConsumeMP(montant)
 }
 
-// ConsommerMP consomme des points de magie
-func (u *Unite) ConsommerMP(montant int) {
-	u.statsActuelles.MP -= montant
-	if u.statsActuelles.MP < 0 {
-		u.statsActuelles.MP = 0
-	}
-}
-
-// ConsommerStamina consomme de l'endurance
-func (u *Unite) ConsommerStamina(montant int) {
-	u.statsActuelles.Stamina -= montant
-	if u.statsActuelles.Stamina < 0 {
-		u.statsActuelles.Stamina = 0
-	}
+// ConsommerStamina consomme de l'endurance (délègue au composant)
+func (u *Unite) ConsommerStamina(montant int) error {
+	return u.combat.ConsumeStamina(montant)
 }
 
 // ObtenirCompetenceParDefaut retourne l'attaque basique de l'unité
@@ -433,52 +368,56 @@ func (u *Unite) AppliquerStatut(statut *shared.Statut) error {
 
 // SetHP définit les HP actuels (utilisé pour rollback des commandes)
 func (u *Unite) SetHP(hp int) {
-	u.statsActuelles.HP = hp
-	if u.statsActuelles.HP < 0 {
-		u.statsActuelles.HP = 0
+	currentStats := u.combat.CurrentStats()
+	baseStats := u.combat.BaseStats()
+
+	currentStats.HP = hp
+	if currentStats.HP < 0 {
+		currentStats.HP = 0
 	}
-	if u.statsActuelles.HP > u.stats.HP {
-		u.statsActuelles.HP = u.stats.HP
+	if currentStats.HP > baseStats.HP {
+		currentStats.HP = baseStats.HP
 	}
 
-	// Mettre à jour le statut d'élimination
-	if u.statsActuelles.HP == 0 {
-		u.estEliminee = true
-	} else if u.estEliminee && u.statsActuelles.HP > 0 {
-		u.estEliminee = false
+	// Mettre à jour le statut d'élimination via le combat component
+	if currentStats.HP == 0 {
+		u.combat.TakeDamage(0) // Déclenche la logique KO
 	}
 }
 
 // SetMP définit les MP actuels (utilisé pour rollback des commandes)
 func (u *Unite) SetMP(mp int) {
-	u.statsActuelles.MP = mp
-	if u.statsActuelles.MP < 0 {
-		u.statsActuelles.MP = 0
+	currentStats := u.combat.CurrentStats()
+	baseStats := u.combat.BaseStats()
+
+	currentStats.MP = mp
+	if currentStats.MP < 0 {
+		currentStats.MP = 0
 	}
-	if u.statsActuelles.MP > u.stats.MP {
-		u.statsActuelles.MP = u.stats.MP
+	if currentStats.MP > baseStats.MP {
+		currentStats.MP = baseStats.MP
 	}
 }
 
 // RestaurerMP restaure des points de magie
 func (u *Unite) RestaurerMP(montant int) {
-	u.statsActuelles.MP += montant
-	if u.statsActuelles.MP > u.stats.MP {
-		u.statsActuelles.MP = u.stats.MP
+	currentStats := u.combat.CurrentStats()
+	baseStats := u.combat.BaseStats()
+
+	currentStats.MP += montant
+	if currentStats.MP > baseStats.MP {
+		currentStats.MP = baseStats.MP
 	}
 }
 
 // Ressusciter ressuscite l'unité avec un montant de HP
 func (u *Unite) Ressusciter(hp int) {
-	if !u.estEliminee {
+	if !u.combat.IsEliminated() {
 		return // Déjà vivante
 	}
 
-	u.estEliminee = false
-	u.statsActuelles.HP = hp
-	if u.statsActuelles.HP > u.stats.HP {
-		u.statsActuelles.HP = u.stats.HP
-	}
+	// Utiliser la méthode Revive du combat component
+	u.combat.Revive(hp)
 
 	// Retirer le statut "Dead" si présent
 	u.RetirerStatut(shared.TypeStatutMort)
@@ -501,42 +440,22 @@ func (u *Unite) IAChoisirAction(combat interface{}) interface{} {
 
 // EstSilence vérifie si l'unité est sous l'effet Silence (bloque compétences)
 func (u *Unite) EstSilence() bool {
-	for _, statut := range u.statuts {
-		if statut.Type() == shared.TypeStatutSilence {
-			return true
-		}
-	}
-	return false
+	return u.statuses.IsSilenced()
 }
 
 // EstStun vérifie si l'unité est sous l'effet Stun (bloque toutes actions)
 func (u *Unite) EstStun() bool {
-	for _, statut := range u.statuts {
-		if statut.Type() == shared.TypeStatutStun {
-			return true
-		}
-	}
-	return false
+	return u.statuses.IsStunned()
 }
 
 // EstRoot vérifie si l'unité est sous l'effet Root (bloque déplacement)
 func (u *Unite) EstRoot() bool {
-	for _, statut := range u.statuts {
-		if statut.Type() == shared.TypeStatutRoot {
-			return true
-		}
-	}
-	return false
+	return u.statuses.IsRooted()
 }
 
 // EstEmpoisonne vérifie si l'unité est empoisonnée
 func (u *Unite) EstEmpoisonne() bool {
-	for _, statut := range u.statuts {
-		if statut.Type() == shared.TypeStatutPoison {
-			return true
-		}
-	}
-	return false
+	return u.statuses.IsPoisoned()
 }
 
 // SkillEstPret vérifie si une compétence est prête (pas en cooldown et ressources suffisantes)

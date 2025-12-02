@@ -194,3 +194,34 @@ func (inv *CommandInvoker) GetHistory() []Command {
 func (inv *CommandInvoker) Clear() {
 	inv.history = make([]Command, 0)
 }
+
+// Implémentation de CommandSystemProvider interface
+
+// CanUndo implémente CommandSystemProvider
+func (inv *CommandInvoker) CanUndo() bool {
+	return len(inv.history) > 0
+}
+
+// Undo implémente CommandSystemProvider
+func (inv *CommandInvoker) Undo() error {
+	if !inv.CanUndo() {
+		return fmt.Errorf("aucune commande à annuler")
+	}
+
+	lastCmd := inv.history[len(inv.history)-1]
+	if err := lastCmd.Rollback(); err != nil {
+		return fmt.Errorf("échec du rollback: %w", err)
+	}
+
+	inv.history = inv.history[:len(inv.history)-1]
+	return nil
+}
+
+// History implémente CommandSystemProvider
+func (inv *CommandInvoker) History() []string {
+	result := make([]string, len(inv.history))
+	for i, cmd := range inv.history {
+		result[i] = fmt.Sprintf("%s by %s", cmd.GetType(), cmd.GetActor().ID())
+	}
+	return result
+}

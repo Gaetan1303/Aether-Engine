@@ -8,16 +8,13 @@ import (
 )
 
 // Combat est l'agrégat racine qui gère une instance de combat tactique
+// Architecture: State Machine + Command Pattern + Observer Pattern + Chain of Responsibility
 type Combat struct {
 	id                string
 	etat              EtatCombat
 	equipes           map[TeamID]*Equipe
 	grille            *shared.GrilleCombat
-	ordreDeJeu        []UnitID
-	uniteActive       UnitID
-	phase             PhaseTour
 	tourActuel        int
-	actionEnCours     *ActionCombat
 	version           int
 	evenements        []Evenement // Uncommitted events
 	createdAt         time.Time
@@ -25,13 +22,13 @@ type Combat struct {
 	damageCalculator  DamageCalculator         // Strategy Pattern - algorithme de dégâts
 	calculatorFactory *DamageCalculatorFactory // Factory pour créer strategies
 
-	// Step C - State Machine + Command Pattern + Observer Pattern
-	// Utilisation d'interfaces pour éviter les cycles d'imports
-	stateMachine    interface{}     // CombatStateMachine interface
-	commandInvoker  interface{}     // CommandInvoker interface
-	commandFactory  interface{}     // CommandFactory interface
-	observerSubject interface{}     // ObserverSubject interface
-	validationChain interface{}     // ValidationChain interface
+	// Step C - Design Patterns Architecture
+	// Interfaces typées pour éviter les cycles d'imports (Interface Segregation Principle)
+	stateMachine    StateMachineProvider
+	commandInvoker  CommandSystemProvider
+	commandFactory  CommandFactoryProvider
+	observerSubject ObserverProvider
+	validationChain ValidationProvider
 	fuiteAutorisee  bool            // Indique si la fuite est autorisée
 	equipesFuites   map[TeamID]bool // Équipes ayant fui le combat
 }
@@ -47,8 +44,6 @@ func NewCombat(id string, equipes []*Equipe, grille *shared.GrilleCombat) (*Comb
 		etat:              EtatAttente,
 		equipes:           make(map[TeamID]*Equipe),
 		grille:            grille,
-		ordreDeJeu:        make([]UnitID, 0),
-		phase:             PhasePreparation,
 		tourActuel:        0,
 		version:           0,
 		evenements:        make([]Evenement, 0),
@@ -76,12 +71,11 @@ func (c *Combat) Etat() EtatCombat             { return c.etat }
 func (c *Combat) Grille() *shared.GrilleCombat { return c.grille }
 func (c *Combat) TourActuel() int              { return c.tourActuel }
 func (c *Combat) Version() int                 { return c.version }
-func (c *Combat) UniteActive() UnitID          { return c.uniteActive }
 func (c *Combat) Equipes() map[TeamID]*Equipe  { return c.equipes }
 func (c *Combat) GetTimestamp() int64          { return c.updatedAt.Unix() }
 
-// Step C - Méthodes simples sans dépendances cycliques
-// (Les méthodes complexes sont dans combat_step_c.go)
+// Step C - Méthodes publiques pour la State Machine
+// Toute l'exécution passe par combatfacade.ExecutePlayerAction()
 
 func (c *Combat) FuiteAutorisee() bool {
 	return c.fuiteAutorisee
@@ -224,117 +218,18 @@ func (c *Combat) ObtenirObjet(itemID string) interface{} {
 	return nil // Placeholder
 }
 
-// Demarrer démarre le combat et calcule l'ordre d'initiative
-// DEPRECATED: Utilisez InitializeCombatWithStateMachine() via CombatInitializer pour la nouvelle state machine (Step C)
+// Demarrer démarre le combat via la State Machine
+// Utilise CombatInitializer.InitializeAll() puis combatfacade pour démarrer
 func (c *Combat) Demarrer() error {
 	if c.etat != EtatAttente {
 		return errors.New("le combat doit être en attente pour démarrer")
 	}
 
-	// Calculer l'ordre d'initiative basé sur la vitesse
-	c.calculerOrdreInitiative()
-
 	c.etat = EtatEnCours
-	c.phase = PhaseDebutTour
 	c.tourActuel = 1
 
-	if len(c.ordreDeJeu) > 0 {
-		c.uniteActive = c.ordreDeJeu[0]
-	}
-
-	// Raise event
-	c.RaiseEvent(NewCombatDemarreEvent(c.id, c.tourActuel, c.ordreDeJeu))
-
-	return nil
-}
-
-// ExecuterAction exécute une action de combat
-func (c *Combat) ExecuterAction(action *ActionCombat) error {
-	if c.etat != EtatEnCours {
-		return errors.New("le combat doit être en cours")
-	}
-
-	if c.phase != PhaseAttenteAction {
-		return errors.New("pas en phase d'attente d'action")
-	}
-
-	// Valider que l'acteur est bien l'unité active
-	if action.ActeurID != c.uniteActive {
-		return errors.New("ce n'est pas le tour de cette unité")
-	}
-
-	// Récupérer l'acteur
-	acteur := c.trouverUnite(action.ActeurID)
-	if acteur == nil {
-		return errors.New("acteur introuvable")
-	}
-
-	// Valider l'action
-	if err := c.validerAction(acteur, action); err != nil {
-		return err
-	}
-
-	// Résoudre l'action
-	c.phase = PhaseExecutionAction
-	c.actionEnCours = action
-
-	resultat, err := c.resoudreAction(acteur, action)
-	if err != nil {
-		return err
-	}
-
-	// Appliquer les effets
-	c.appliquerResultatAction(resultat)
-
-	// Raise event
-	c.RaiseEvent(NewActionExecuteeEvent(c.id, c.tourActuel, action, resultat))
-
-	// Passer à la phase suivante
-	c.phase = PhasePostTraitement
-
-	return nil
-}
-
-// TourSuivant passe au tour suivant
-func (c *Combat) TourSuivant() error {
-	if c.etat != EtatEnCours {
-		return errors.New("le combat doit être en cours")
-	}
-
-	// Vérifier condition de fin
-	if c.estTermine() {
-		return c.Terminer()
-	}
-
-	// Passer à l'unité suivante
-	c.passerUniteeSuivante()
-
-	// Si on revient au début de l'ordre, nouveau tour
-	if c.ordreDeJeu[0] == c.uniteActive {
-		c.tourActuel++
-		c.RaiseEvent(NewTourDemarreEvent(c.id, c.tourActuel))
-	}
-
-	c.phase = PhaseAttenteAction
-	c.actionEnCours = nil
-
-	return nil
-}
-
-// Terminer termine le combat
-func (c *Combat) Terminer() error {
-	if c.etat == EtatTermine {
-		return errors.New("le combat est déjà terminé")
-	}
-
-	c.etat = EtatTermine
-	c.phase = PhaseTermine
-
-	// Déterminer le vainqueur
-	vainqueur := c.determinerVainqueur()
-
-	c.RaiseEvent(NewCombatTermineEvent(c.id, c.tourActuel, vainqueur))
-
+	// La State Machine gère maintenant le démarrage
+	// via la transition Idle → Initializing → Ready
 	return nil
 }
 
@@ -359,6 +254,7 @@ func (c *Combat) ClearUncommittedEvents() {
 }
 
 // ReconstruireDepuisEvenements reconstruit l'état du combat depuis les événements
+// Utilisé pour Event Sourcing - rejoue tous les événements pour reconstruire l'état
 func ReconstruireDepuisEvenements(events []Evenement) (*Combat, error) {
 	if len(events) == 0 {
 		return nil, errors.New("aucun événement fourni")
@@ -387,423 +283,27 @@ func ReconstruireDepuisEvenements(events []Evenement) (*Combat, error) {
 	return combat, nil
 }
 
-// Apply applique un événement à l'agrégat
+// Apply applique un événement à l'agrégat (Event Sourcing)
 func (c *Combat) Apply(evt Evenement) error {
 	switch e := evt.(type) {
 	case *CombatDemarreEvent:
-		return c.applyCombatDemarre(e)
-	case *ActionExecuteeEvent:
-		return c.applyActionExecutee(e)
+		c.etat = EtatEnCours
+		c.tourActuel = e.Tour
+		return nil
 	case *TourDemarreEvent:
-		return c.applyTourDemarre(e)
+		c.tourActuel = e.Tour
+		return nil
 	case *CombatTermineEvent:
-		return c.applyCombatTermine(e)
+		c.etat = EtatTermine
+		return nil
+	case *ActionExecuteeEvent, *DegatsInfligesEvent, *SoinApliqueEvent,
+		*StatutAppliqueEvent, *UniteElimineeEvent, *CompetenceUtiliseeEvent,
+		*DeplacementExecuteEvent:
+		// Événements gérés par la State Machine
+		return nil
 	default:
 		return errors.New("type d'événement inconnu")
 	}
-}
-
-// Private methods
-
-func (c *Combat) applyCombatDemarre(evt *CombatDemarreEvent) error {
-	c.etat = EtatEnCours
-	c.tourActuel = evt.Tour
-	c.ordreDeJeu = evt.OrdreInitiative
-	if len(c.ordreDeJeu) > 0 {
-		c.uniteActive = c.ordreDeJeu[0]
-	}
-	c.phase = PhaseAttenteAction
-	return nil
-}
-
-func (c *Combat) applyActionExecutee(evt *ActionExecuteeEvent) error {
-	// Mettre à jour l'état selon le résultat de l'action
-	// TODO: Implémenter la logique de mise à jour
-	return nil
-}
-
-func (c *Combat) applyTourDemarre(evt *TourDemarreEvent) error {
-	c.tourActuel = evt.Tour
-	return nil
-}
-
-func (c *Combat) applyCombatTermine(evt *CombatTermineEvent) error {
-	c.etat = EtatTermine
-	c.phase = PhaseTermine
-	return nil
-}
-
-func (c *Combat) calculerOrdreInitiative() {
-	// Collecter toutes les unités
-	unites := make([]*Unite, 0)
-	for _, equipe := range c.equipes {
-		unites = append(unites, equipe.Membres()...)
-	}
-
-	// Trier par vitesse (SPD) décroissante
-	// TODO: Implémenter le tri avec randomisation pour égalités
-
-	// Construire l'ordre
-	c.ordreDeJeu = make([]UnitID, len(unites))
-	for i, unite := range unites {
-		c.ordreDeJeu[i] = unite.ID()
-	}
-}
-
-func (c *Combat) validerAction(acteur *Unite, action *ActionCombat) error {
-	// Vérifier que l'unité peut agir
-	if !acteur.PeutAgir() {
-		return errors.New("l'unité ne peut pas agir")
-	}
-
-	// Vérifier les coûts (MP, Stamina)
-	// TODO: Implémenter validation des coûts
-
-	// Vérifier la portée
-	// TODO: Implémenter validation de portée
-
-	// Vérifier les cibles valides
-	// TODO: Implémenter validation des cibles
-
-	return nil
-}
-
-func (c *Combat) resoudreAction(acteur *Unite, action *ActionCombat) (*ResultatAction, error) {
-	// Créer le résultat
-	resultat := &ResultatAction{
-		ActeurID:   action.ActeurID,
-		TypeAction: action.Type,
-		Effets:     make([]EffetAction, 0),
-	}
-
-	// Résoudre selon le type d'action
-	switch action.Type {
-	case TypeActionAttaque:
-		c.resoudreAttaque(acteur, action, resultat)
-	case TypeActionCompetence:
-		c.resoudreCompetence(acteur, action, resultat)
-	case TypeActionDeplacement:
-		c.resoudreDeplacement(acteur, action, resultat)
-	case TypeActionObjet:
-		c.resoudreObjet(acteur, action, resultat)
-	default:
-		return nil, errors.New("type d'action inconnu")
-	}
-
-	return resultat, nil
-}
-
-func (c *Combat) resoudreAttaque(acteur *Unite, action *ActionCombat, resultat *ResultatAction) {
-	if action.CibleID == nil {
-		return
-	}
-
-	// Trouver la cible
-	cible := c.trouverUnite(*action.CibleID)
-	if cible == nil {
-		return
-	}
-
-	// Utiliser l'attaque basique (compétence par défaut)
-	// Pour une attaque basique, on utilise le calculator par défaut (physique)
-	attaqueBasique := acteur.ObtenirCompetenceParDefaut()
-
-	// Calculer les dégâts avec le Strategy Pattern
-	degats := c.damageCalculator.Calculate(acteur, cible, attaqueBasique)
-
-	// Appliquer les dégâts à la cible
-	cible.RecevoirDegats(degats)
-
-	// Ajouter l'effet au résultat
-	resultat.Effets = append(resultat.Effets, EffetAction{
-		Type:    TypeEffetActionDegats,
-		CibleID: *action.CibleID,
-		Valeur:  degats,
-	})
-
-	// Raise event
-	c.RaiseEvent(NewDegatsInfligesEvent(c.id, c.tourActuel, action.ActeurID, *action.CibleID, degats))
-
-	// Vérifier si la cible est éliminée
-	if cible.EstEliminee() {
-		c.RaiseEvent(NewUniteElimineeEvent(c.id, c.tourActuel, *action.CibleID))
-	}
-}
-
-func (c *Combat) resoudreCompetence(acteur *Unite, action *ActionCombat, resultat *ResultatAction) {
-	if action.CompetenceID == nil {
-		return
-	}
-
-	// Trouver la compétence
-	competence := acteur.ObtenirCompetence(*action.CompetenceID)
-	if competence == nil {
-		return
-	}
-
-	// Vérifier le coût en MP/Stamina
-	statsActeur := acteur.Stats()
-	if statsActeur.MP < competence.CoutMP() || statsActeur.Stamina < competence.CoutStamina() {
-		return // Pas assez de ressources
-	}
-
-	// Consommer les ressources
-	acteur.ConsommerMP(competence.CoutMP())
-	acteur.ConsommerStamina(competence.CoutStamina())
-
-	// Créer le calculator approprié selon le type de compétence
-	calculator := c.calculatorFactory.CreateCalculator(competence)
-
-	// Résoudre selon le type d'effet
-	for _, effet := range competence.Effets() {
-		switch effet.TypeEffet() {
-		case EffetDegats:
-			c.resoudreEffetDegats(acteur, action, competence, calculator, resultat)
-		case EffetSoin:
-			c.resoudreEffetSoin(acteur, action, competence, resultat)
-		case EffetStatut:
-			c.resoudreEffetStatut(acteur, action, competence, resultat)
-		case EffetInvocation:
-			c.resoudreEffetInvocation(acteur, action, competence, resultat)
-		}
-	}
-
-	// Raise event
-	cibles := make([]UnitID, 0)
-	if action.CibleID != nil {
-		cibles = append(cibles, *action.CibleID)
-	}
-	c.RaiseEvent(NewCompetenceUtiliseeEvent(c.id, c.tourActuel, action.ActeurID, *action.CompetenceID, cibles))
-}
-
-func (c *Combat) resoudreEffetDegats(acteur *Unite, action *ActionCombat, competence *Competence, calculator DamageCalculator, resultat *ResultatAction) {
-	if action.CibleID == nil {
-		return
-	}
-
-	// Trouver la cible
-	cible := c.trouverUnite(*action.CibleID)
-	if cible == nil {
-		return
-	}
-
-	// Calculer les dégâts avec le Strategy Pattern
-	degats := calculator.Calculate(acteur, cible, competence)
-
-	// Appliquer les dégâts
-	cible.RecevoirDegats(degats)
-
-	// Ajouter l'effet au résultat
-	resultat.Effets = append(resultat.Effets, EffetAction{
-		Type:    TypeEffetActionDegats,
-		CibleID: *action.CibleID,
-		Valeur:  degats,
-	})
-
-	// Raise event
-	c.RaiseEvent(NewDegatsInfligesEvent(c.id, c.tourActuel, action.ActeurID, *action.CibleID, degats))
-
-	// Vérifier si la cible est éliminée
-	if cible.EstEliminee() {
-		c.RaiseEvent(NewUniteElimineeEvent(c.id, c.tourActuel, *action.CibleID))
-	}
-}
-
-func (c *Combat) resoudreEffetSoin(acteur *Unite, action *ActionCombat, competence *Competence, resultat *ResultatAction) {
-	if action.CibleID == nil {
-		return
-	}
-
-	// Trouver la cible
-	cible := c.trouverUnite(*action.CibleID)
-	if cible == nil {
-		return
-	}
-
-	// Calculer le soin (base + scaling)
-	statsActeur := acteur.Stats()
-	soinBase := competence.DegatsBase() // Réutilise le champ pour le montant de soin
-	scaling := competence.Modificateur() * float64(statsActeur.MATK)
-	soin := soinBase + int(scaling)
-
-	// Appliquer le soin
-	cible.RecevoirSoin(soin)
-
-	// Ajouter l'effet au résultat
-	resultat.Effets = append(resultat.Effets, EffetAction{
-		Type:    TypeEffetActionSoin,
-		CibleID: *action.CibleID,
-		Valeur:  soin,
-	})
-
-	// Raise event
-	c.RaiseEvent(NewSoinApliqueEvent(c.id, c.tourActuel, action.ActeurID, *action.CibleID, soin))
-}
-
-func (c *Combat) resoudreEffetStatut(acteur *Unite, action *ActionCombat, competence *Competence, resultat *ResultatAction) {
-	if action.CibleID == nil {
-		return
-	}
-
-	// Trouver la cible
-	cible := c.trouverUnite(*action.CibleID)
-	if cible == nil {
-		return
-	}
-
-	// Appliquer chaque statut de la compétence
-	for _, effet := range competence.Effets() {
-		if effet.TypeEffet() == EffetStatut && effet.StatutType() != nil {
-			// Créer un statut à partir du type (duree, puissance)
-			statut := shared.NewStatut(*effet.StatutType(), effet.Duree(), effet.Valeur())
-
-			cible.AppliquerStatut(statut)
-
-			// Ajouter l'effet au résultat
-			resultat.Effets = append(resultat.Effets, EffetAction{
-				Type:    TypeEffetActionStatut,
-				CibleID: *action.CibleID,
-				Valeur:  0, // Pas de valeur numérique pour un statut
-			})
-
-			// Raise event
-			c.RaiseEvent(NewStatutAppliqueEvent(c.id, c.tourActuel, action.ActeurID, *action.CibleID, statut))
-		}
-	}
-}
-
-func (c *Combat) resoudreEffetInvocation(acteur *Unite, action *ActionCombat, competence *Competence, resultat *ResultatAction) {
-	// TODO: Implémenter invocation (Step B avancé)
-}
-
-func (c *Combat) resoudreDeplacement(acteur *Unite, action *ActionCombat, resultat *ResultatAction) {
-	// Validation: l'action doit avoir une position cible
-	if action.PositionCible == nil {
-		resultat.Succes = false
-		resultat.MessageErreur = "position cible requise pour le déplacement"
-		return
-	}
-
-	positionActuelle := acteur.Position()
-	positionCible := action.PositionCible
-
-	// Vérifier que la destination est différente
-	if positionActuelle.Equals(positionCible) {
-		resultat.Succes = false
-		resultat.MessageErreur = "l'unité est déjà à cette position"
-		return
-	}
-
-	// Vérifier que l'unité peut se déplacer (pas Root ou Stun)
-	if acteur.EstBloqueDeplacement() {
-		resultat.Succes = false
-		resultat.MessageErreur = "l'unité ne peut pas se déplacer (statut bloquant)"
-		return
-	}
-
-	// Créer une map des positions occupées par les autres unités
-	unitesOccupees := c.obtenirPositionsOccupees(acteur.ID())
-
-	// Utiliser le service de pathfinding (Strategy Pattern)
-	pathfindingService := NewPathfindingService()
-
-	// Choisir la stratégie selon le contexte (Factory Pattern)
-	// Par défaut : Manhattan (déplacement tactique en grille)
-	pathfindingService.SetStrategyType("manhattan")
-
-	// Trouver le chemin avec respect de la portée de mouvement
-	porteeMax := acteur.Stats().MOV
-	chemin, cout, err := pathfindingService.TrouverCheminAvecPortee(
-		c.grille,
-		positionActuelle,
-		positionCible,
-		unitesOccupees,
-		porteeMax,
-	)
-
-	if err != nil {
-		resultat.Succes = false
-		resultat.MessageErreur = err.Error()
-		return
-	}
-
-	// Déplacer l'unité
-	acteur.DeplacerVers(positionCible)
-
-	// Ajouter les informations du déplacement au résultat
-	resultat.Succes = true
-	resultat.CoutDeplacement = cout
-	resultat.CheminParcouru = chemin
-
-	// Raise event
-	c.RaiseEvent(NewDeplacementExecuteEvent(
-		c.id,
-		c.tourActuel,
-		acteur.ID(),
-		positionActuelle,
-		positionCible,
-		chemin,
-		cout,
-	))
-}
-
-func (c *Combat) resoudreObjet(acteur *Unite, action *ActionCombat, resultat *ResultatAction) {
-	// TODO: Implémenter résolution objet
-}
-
-func (c *Combat) appliquerResultatAction(resultat *ResultatAction) {
-	// Appliquer tous les effets
-	for _, effet := range resultat.Effets {
-		switch effet.Type {
-		case TypeEffetActionDegats:
-			c.appliquerDegats(effet.CibleID, effet.Valeur)
-		case TypeEffetActionSoin:
-			c.appliquerSoin(effet.CibleID, effet.Valeur)
-		case TypeEffetActionStatut:
-			c.appliquerStatut(effet.CibleID, effet.Statut)
-		}
-	}
-}
-
-func (c *Combat) appliquerDegats(cibleID UnitID, degats int) {
-	cible := c.trouverUnite(cibleID)
-	if cible == nil {
-		return
-	}
-
-	cible.RecevoirDegats(degats)
-
-	// Raise event
-	c.RaiseEvent(NewDegatsInfligesEvent(c.id, c.tourActuel, c.uniteActive, cibleID, degats))
-
-	// Vérifier si l'unité est éliminée
-	if cible.EstEliminee() {
-		c.RaiseEvent(NewUniteElimineeEvent(c.id, c.tourActuel, cibleID))
-	}
-}
-
-func (c *Combat) appliquerSoin(cibleID UnitID, soin int) {
-	cible := c.trouverUnite(cibleID)
-	if cible == nil {
-		return
-	}
-
-	cible.RecevoirSoin(soin)
-
-	// Raise event
-	c.RaiseEvent(NewSoinApliqueEvent(c.id, c.tourActuel, c.uniteActive, cibleID, soin))
-}
-
-func (c *Combat) appliquerStatut(cibleID UnitID, statut *shared.Statut) {
-	cible := c.trouverUnite(cibleID)
-	if cible == nil {
-		return
-	}
-
-	cible.AjouterStatut(statut)
-
-	// Raise event
-	c.RaiseEvent(NewStatutAppliqueEvent(c.id, c.tourActuel, c.uniteActive, cibleID, statut))
 }
 
 func (c *Combat) trouverUnite(id UnitID) *Unite {
@@ -815,21 +315,6 @@ func (c *Combat) trouverUnite(id UnitID) *Unite {
 		}
 	}
 	return nil
-}
-
-func (c *Combat) passerUniteeSuivante() {
-	// Trouver l'index de l'unité active
-	currentIndex := -1
-	for i, id := range c.ordreDeJeu {
-		if id == c.uniteActive {
-			currentIndex = i
-			break
-		}
-	}
-
-	// Passer à la suivante (avec wrap around)
-	nextIndex := (currentIndex + 1) % len(c.ordreDeJeu)
-	c.uniteActive = c.ordreDeJeu[nextIndex]
 }
 
 func (c *Combat) obtenirPositionsOccupees(exclusionID UnitID) map[string]bool {
@@ -849,67 +334,48 @@ func (c *Combat) obtenirPositionsOccupees(exclusionID UnitID) map[string]bool {
 	return positions
 }
 
-func (c *Combat) estTermine() bool {
-	// Compter les équipes actives (avec au moins 1 membre vivant)
-	equipesActives := 0
-	for _, equipe := range c.equipes {
-		if equipe.ADesMembresVivants() {
-			equipesActives++
-		}
-	}
+// Step C - Setters et getters pour les composants Step C (utilisés par combatinitializer et combatfacade)
 
-	// Combat terminé si 0 ou 1 équipe active
-	return equipesActives <= 1
-}
+// Step C - Setters avec interfaces typées (Dependency Inversion Principle)
 
-func (c *Combat) determinerVainqueur() *TeamID {
-	for _, equipe := range c.equipes {
-		if equipe.ADesMembresVivants() {
-			id := equipe.ID()
-			return &id
-		}
-	}
-	return nil
-}
-
-// Step C - Setters et getters pour les composants (utilisés par combatinitializer et combatfacade)
-
-func (c *Combat) SetStateMachine(sm interface{}) {
+func (c *Combat) SetStateMachine(sm StateMachineProvider) {
 	c.stateMachine = sm
 }
 
-func (c *Combat) SetCommandInvoker(invoker interface{}) {
+func (c *Combat) SetCommandInvoker(invoker CommandSystemProvider) {
 	c.commandInvoker = invoker
 }
 
-func (c *Combat) SetCommandFactory(factory interface{}) {
+func (c *Combat) SetCommandFactory(factory CommandFactoryProvider) {
 	c.commandFactory = factory
 }
 
-func (c *Combat) SetObserverSubject(subject interface{}) {
+func (c *Combat) SetObserverSubject(subject ObserverProvider) {
 	c.observerSubject = subject
 }
 
-func (c *Combat) SetValidationChain(chain interface{}) {
+func (c *Combat) SetValidationChain(chain ValidationProvider) {
 	c.validationChain = chain
 }
 
-func (c *Combat) GetStateMachineRaw() interface{} {
+// Step C - Getters avec interfaces typées
+
+func (c *Combat) GetStateMachine() StateMachineProvider {
 	return c.stateMachine
 }
 
-func (c *Combat) GetCommandInvokerRaw() interface{} {
+func (c *Combat) GetCommandInvoker() CommandSystemProvider {
 	return c.commandInvoker
 }
 
-func (c *Combat) GetCommandFactoryRaw() interface{} {
+func (c *Combat) GetCommandFactory() CommandFactoryProvider {
 	return c.commandFactory
 }
 
-func (c *Combat) GetObserverSubjectRaw() interface{} {
+func (c *Combat) GetObserverSubject() ObserverProvider {
 	return c.observerSubject
 }
 
-func (c *Combat) GetValidationChainRaw() interface{} {
+func (c *Combat) GetValidationChain() ValidationProvider {
 	return c.validationChain
 }
