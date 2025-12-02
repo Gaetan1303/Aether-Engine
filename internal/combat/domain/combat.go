@@ -24,6 +24,16 @@ type Combat struct {
 	updatedAt         time.Time
 	damageCalculator  DamageCalculator         // Strategy Pattern - algorithme de dégâts
 	calculatorFactory *DamageCalculatorFactory // Factory pour créer strategies
+
+	// Step C - State Machine + Command Pattern + Observer Pattern
+	// Utilisation d'interfaces pour éviter les cycles d'imports
+	stateMachine    interface{}     // CombatStateMachine interface
+	commandInvoker  interface{}     // CommandInvoker interface
+	commandFactory  interface{}     // CommandFactory interface
+	observerSubject interface{}     // ObserverSubject interface
+	validationChain interface{}     // ValidationChain interface
+	fuiteAutorisee  bool            // Indique si la fuite est autorisée
+	equipesFuites   map[TeamID]bool // Équipes ayant fui le combat
 }
 
 // NewCombat crée une nouvelle instance de combat
@@ -46,6 +56,10 @@ func NewCombat(id string, equipes []*Equipe, grille *shared.GrilleCombat) (*Comb
 		updatedAt:         time.Now(),
 		calculatorFactory: NewDamageCalculatorFactory(),  // Factory Pattern
 		damageCalculator:  NewPhysicalDamageCalculator(), // Strategy par défaut
+
+		// Step C - Les patterns seront initialisés via CombatInitializer
+		fuiteAutorisee: true, // Par défaut, fuite autorisée
+		equipesFuites:  make(map[TeamID]bool),
 	}
 
 	// Ajouter les équipes
@@ -63,6 +77,19 @@ func (c *Combat) Grille() *shared.GrilleCombat { return c.grille }
 func (c *Combat) TourActuel() int              { return c.tourActuel }
 func (c *Combat) Version() int                 { return c.version }
 func (c *Combat) UniteActive() UnitID          { return c.uniteActive }
+func (c *Combat) Equipes() map[TeamID]*Equipe  { return c.equipes }
+func (c *Combat) GetTimestamp() int64          { return c.updatedAt.Unix() }
+
+// Step C - Méthodes simples sans dépendances cycliques
+// (Les méthodes complexes sont dans combat_step_c.go)
+
+func (c *Combat) FuiteAutorisee() bool {
+	return c.fuiteAutorisee
+}
+
+func (c *Combat) SetFuiteAutorisee(autorisee bool) {
+	c.fuiteAutorisee = autorisee
+}
 
 // Strategy Pattern - Setters pour changer l'algorithme de dégâts
 // Permet de changer dynamiquement la stratégie de calcul (Open/Closed Principle)
@@ -92,7 +119,113 @@ func (c *Combat) GetDamageCalculator() DamageCalculator {
 	return c.damageCalculator
 }
 
+// Step C - Méthodes helper publiques (sans imports cycliques)
+// Les méthodes complexes avec state machine sont dans combat_step_c.go
+
+// TrouverUnite trouve une unité par son ID (méthode publique)
+func (c *Combat) TrouverUnite(id UnitID) *Unite {
+	return c.trouverUnite(id)
+}
+
+// ObtenirPositionsOccupees retourne les positions occupées (sauf une unité)
+func (c *Combat) ObtenirPositionsOccupees(exclusionID UnitID) map[string]bool {
+	return c.obtenirPositionsOccupees(exclusionID)
+}
+
+// MarquerEquipeFuite marque une équipe comme ayant fui
+func (c *Combat) MarquerEquipeFuite(teamID TeamID) {
+	c.equipesFuites[teamID] = true
+}
+
+// AnnulerFuite annule la fuite d'une équipe (pour rollback)
+func (c *Combat) AnnulerFuite(teamID TeamID) {
+	delete(c.equipesFuites, teamID)
+}
+
+// ObtenirEnnemis retourne tous les ennemis d'une équipe
+func (c *Combat) ObtenirEnnemis(teamID TeamID) []*Unite {
+	ennemis := make([]*Unite, 0)
+	for _, equipe := range c.equipes {
+		if equipe.ID() != teamID {
+			for _, membre := range equipe.Membres() {
+				if !membre.EstEliminee() {
+					ennemis = append(ennemis, membre)
+				}
+			}
+		}
+	}
+	return ennemis
+}
+
+// VerifierConditionsVictoire vérifie les conditions de victoire/défaite
+func (c *Combat) VerifierConditionsVictoire() string {
+	// Vérifier les équipes ayant fui
+	equipesActives := 0
+	for teamID, equipe := range c.equipes {
+		// Si l'équipe a fui, elle n'est pas active
+		if c.equipesFuites[teamID] {
+			continue
+		}
+		// Si l'équipe a des membres vivants, elle est active
+		if equipe.ADesMembresVivants() {
+			equipesActives++
+		}
+	}
+
+	if equipesActives <= 1 {
+		// Vérifier si c'est une fuite
+		for teamID := range c.equipesFuites {
+			if c.equipesFuites[teamID] {
+				return "FLED"
+			}
+		}
+		// Sinon victoire/défaite
+		if equipesActives == 1 {
+			return "VICTORY"
+		}
+		return "DEFEAT"
+	}
+
+	return "CONTINUE"
+}
+
+// ObtenirResultat retourne le résultat du combat
+func (c *Combat) ObtenirResultat() string {
+	return c.VerifierConditionsVictoire()
+}
+
+// DistribuerRecompenses distribue les récompenses (XP, loots)
+func (c *Combat) DistribuerRecompenses() {
+	// TODO: Implémenter la distribution de récompenses
+	// Pour l'instant, juste un placeholder
+}
+
+// Méthodes pour le système d'inventaire (Item commands)
+func (c *Combat) PossedeObjet(itemID string) bool {
+	// TODO: Implémenter vérification inventaire
+	return true // Placeholder
+}
+
+func (c *Combat) ObtenirQuantiteObjet(itemID string) int {
+	// TODO: Implémenter récupération quantité
+	return 1 // Placeholder
+}
+
+func (c *Combat) ConsommerObjet(itemID string, quantite int) {
+	// TODO: Implémenter consommation objet
+}
+
+func (c *Combat) AjouterObjet(itemID string, quantite int) {
+	// TODO: Implémenter ajout objet
+}
+
+func (c *Combat) ObtenirObjet(itemID string) interface{} {
+	// TODO: Implémenter récupération objet (retournera *shared.Item quand implémenté)
+	return nil // Placeholder
+}
+
 // Demarrer démarre le combat et calcule l'ordre d'initiative
+// DEPRECATED: Utilisez InitializeCombatWithStateMachine() via CombatInitializer pour la nouvelle state machine (Step C)
 func (c *Combat) Demarrer() error {
 	if c.etat != EtatAttente {
 		return errors.New("le combat doit être en attente pour démarrer")
@@ -544,7 +677,74 @@ func (c *Combat) resoudreEffetInvocation(acteur *Unite, action *ActionCombat, co
 }
 
 func (c *Combat) resoudreDeplacement(acteur *Unite, action *ActionCombat, resultat *ResultatAction) {
-	// TODO: Implémenter résolution déplacement (Pathfinding A* - Step B)
+	// Validation: l'action doit avoir une position cible
+	if action.PositionCible == nil {
+		resultat.Succes = false
+		resultat.MessageErreur = "position cible requise pour le déplacement"
+		return
+	}
+
+	positionActuelle := acteur.Position()
+	positionCible := action.PositionCible
+
+	// Vérifier que la destination est différente
+	if positionActuelle.Equals(positionCible) {
+		resultat.Succes = false
+		resultat.MessageErreur = "l'unité est déjà à cette position"
+		return
+	}
+
+	// Vérifier que l'unité peut se déplacer (pas Root ou Stun)
+	if acteur.EstBloqueDeplacement() {
+		resultat.Succes = false
+		resultat.MessageErreur = "l'unité ne peut pas se déplacer (statut bloquant)"
+		return
+	}
+
+	// Créer une map des positions occupées par les autres unités
+	unitesOccupees := c.obtenirPositionsOccupees(acteur.ID())
+
+	// Utiliser le service de pathfinding (Strategy Pattern)
+	pathfindingService := NewPathfindingService()
+
+	// Choisir la stratégie selon le contexte (Factory Pattern)
+	// Par défaut : Manhattan (déplacement tactique en grille)
+	pathfindingService.SetStrategyType("manhattan")
+
+	// Trouver le chemin avec respect de la portée de mouvement
+	porteeMax := acteur.Stats().MOV
+	chemin, cout, err := pathfindingService.TrouverCheminAvecPortee(
+		c.grille,
+		positionActuelle,
+		positionCible,
+		unitesOccupees,
+		porteeMax,
+	)
+
+	if err != nil {
+		resultat.Succes = false
+		resultat.MessageErreur = err.Error()
+		return
+	}
+
+	// Déplacer l'unité
+	acteur.DeplacerVers(positionCible)
+
+	// Ajouter les informations du déplacement au résultat
+	resultat.Succes = true
+	resultat.CoutDeplacement = cout
+	resultat.CheminParcouru = chemin
+
+	// Raise event
+	c.RaiseEvent(NewDeplacementExecuteEvent(
+		c.id,
+		c.tourActuel,
+		acteur.ID(),
+		positionActuelle,
+		positionCible,
+		chemin,
+		cout,
+	))
 }
 
 func (c *Combat) resoudreObjet(acteur *Unite, action *ActionCombat, resultat *ResultatAction) {
@@ -632,6 +832,23 @@ func (c *Combat) passerUniteeSuivante() {
 	c.uniteActive = c.ordreDeJeu[nextIndex]
 }
 
+func (c *Combat) obtenirPositionsOccupees(exclusionID UnitID) map[string]bool {
+	// Crée une map des positions occupées par toutes les unités sauf celle exclue
+	positions := make(map[string]bool)
+
+	for _, equipe := range c.equipes {
+		for _, unite := range equipe.Membres() {
+			if unite.ID() != exclusionID && !unite.EstEliminee() {
+				pos := unite.Position()
+				cle := positionKey(pos)
+				positions[cle] = true
+			}
+		}
+	}
+
+	return positions
+}
+
 func (c *Combat) estTermine() bool {
 	// Compter les équipes actives (avec au moins 1 membre vivant)
 	equipesActives := 0
@@ -653,4 +870,46 @@ func (c *Combat) determinerVainqueur() *TeamID {
 		}
 	}
 	return nil
+}
+
+// Step C - Setters et getters pour les composants (utilisés par combatinitializer et combatfacade)
+
+func (c *Combat) SetStateMachine(sm interface{}) {
+	c.stateMachine = sm
+}
+
+func (c *Combat) SetCommandInvoker(invoker interface{}) {
+	c.commandInvoker = invoker
+}
+
+func (c *Combat) SetCommandFactory(factory interface{}) {
+	c.commandFactory = factory
+}
+
+func (c *Combat) SetObserverSubject(subject interface{}) {
+	c.observerSubject = subject
+}
+
+func (c *Combat) SetValidationChain(chain interface{}) {
+	c.validationChain = chain
+}
+
+func (c *Combat) GetStateMachineRaw() interface{} {
+	return c.stateMachine
+}
+
+func (c *Combat) GetCommandInvokerRaw() interface{} {
+	return c.commandInvoker
+}
+
+func (c *Combat) GetCommandFactoryRaw() interface{} {
+	return c.commandFactory
+}
+
+func (c *Combat) GetObserverSubjectRaw() interface{} {
+	return c.observerSubject
+}
+
+func (c *Combat) GetValidationChainRaw() interface{} {
+	return c.validationChain
 }

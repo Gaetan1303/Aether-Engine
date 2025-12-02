@@ -1,0 +1,355 @@
+package step_c_patterns_test
+
+import (
+	"testing"
+
+	"github.com/aether-engine/aether-engine/internal/combat/domain"
+	"github.com/aether-engine/aether-engine/internal/combat/domain/observers"
+	"github.com/aether-engine/aether-engine/internal/combat/domain/states"
+)
+
+// Test d'ajout et de suppression d'observers
+func TestCombatSubject_AttachDetach(t *testing.T) {
+	// Arrange
+	subject := observers.NewCombatSubject()
+	observer1 := observers.NewStateObserver()
+	observer2 := observers.NewEventLogger()
+
+	// Act - Attacher les observers
+	subject.Attach(observer1)
+	subject.Attach(observer2)
+
+	// Assert - Vérifier le nombre d'observers
+	count := subject.ObserverCount()
+	if count != 2 {
+		t.Errorf("Nombre d'observers attendu: 2, obtenu: %d", count)
+	}
+
+	// Act - Détacher un observer
+	subject.Detach(observer1)
+
+	// Assert
+	count = subject.ObserverCount()
+	if count != 1 {
+		t.Errorf("Nombre d'observers après détachement: 1, obtenu: %d", count)
+	}
+}
+
+// Test de notification à plusieurs observers
+func TestCombatSubject_NotifyMultiple(t *testing.T) {
+	// Arrange
+	subject := observers.NewCombatSubject()
+	logger := observers.NewEventLogger()
+	stateObs := observers.NewStateObserver()
+
+	subject.Attach(logger)
+	subject.Attach(stateObs)
+
+	// Créer un contexte de test
+	ctx := &states.CombatContext{
+		CurrentState: &states.IdleState{},
+	}
+
+	// Act - Notifier tous les observers
+	subject.Notify(states.EventStateChange, ctx)
+
+	// Assert - Vérifier que les observers ont été notifiés
+	// (Dans une vraie implémentation, on vérifierait les logs ou compteurs internes)
+	eventCount := logger.GetEventCount()
+	if eventCount == 0 {
+		t.Errorf("EventLogger devrait avoir reçu au moins 1 notification")
+	}
+}
+
+// Test de StateObserver pour les transitions d'état
+func TestStateObserver_OnStateChange(t *testing.T) {
+	// Arrange
+	observer := observers.NewStateObserver()
+	subject := observers.NewCombatSubject()
+	subject.Attach(observer)
+
+	// Créer des états
+	idleState := &states.IdleState{}
+	readyState := &states.ReadyState{}
+
+	ctx := &states.CombatContext{
+		CurrentState: idleState,
+	}
+
+	// Act - Transition Idle → Ready
+	ctx.CurrentState = readyState
+	subject.Notify(states.EventStateChange, ctx)
+
+	// Assert - Vérifier que l'observer a enregistré la transition
+	transitions := observer.GetTransitionHistory()
+	if len(transitions) == 0 {
+		t.Errorf("L'historique de transitions devrait contenir au moins 1 entrée")
+	}
+
+	lastTransition := transitions[len(transitions)-1]
+	if lastTransition.ToState != readyState.Name() {
+		t.Errorf("État de destination attendu: %s, obtenu: %s",
+			readyState.Name(), lastTransition.ToState)
+	}
+}
+
+// Test de UnitObserver pour les changements de HP
+func TestUnitObserver_OnHPChange(t *testing.T) {
+	// Arrange
+	observer := observers.NewUnitObserver()
+	subject := observers.NewCombatSubject()
+	subject.Attach(observer)
+
+	unit := createTestUnit("U1", 50)
+	unit.SetHP(100)
+
+	ctx := &states.CombatContext{
+		Combat: createTestCombat(),
+	}
+
+	// Act - Changement de HP
+	oldHP := unit.HP()
+	unit.SetHP(50)
+	subject.Notify(states.EventUnitDamaged, ctx)
+
+	// Assert - Vérifier que l'observer a enregistré le changement
+	changes := observer.GetHPChanges(unit.ID())
+	if len(changes) == 0 {
+		t.Errorf("L'historique de changements HP devrait contenir au moins 1 entrée")
+	}
+
+	lastChange := changes[len(changes)-1]
+	if lastChange.OldHP != oldHP || lastChange.NewHP != 50 {
+		t.Errorf("Changement HP attendu: %d→50, obtenu: %d→%d",
+			oldHP, lastChange.OldHP, lastChange.NewHP)
+	}
+}
+
+// Test de UnitObserver pour les changements de MP
+func TestUnitObserver_OnMPChange(t *testing.T) {
+	// Arrange
+	observer := observers.NewUnitObserver()
+	subject := observers.NewCombatSubject()
+	subject.Attach(observer)
+
+	unit := createTestUnit("U1", 50)
+	unit.SetMP(100)
+
+	ctx := &states.CombatContext{}
+
+	// Act - Changement de MP (utilisation de compétence)
+	oldMP := unit.MP()
+	unit.SetMP(70)
+	subject.Notify(states.EventSkillUsed, ctx)
+
+	// Assert
+	changes := observer.GetMPChanges(unit.ID())
+	if len(changes) == 0 {
+		t.Errorf("L'historique de changements MP devrait contenir au moins 1 entrée")
+	}
+
+	lastChange := changes[len(changes)-1]
+	if lastChange.OldMP != oldMP || lastChange.NewMP != 70 {
+		t.Errorf("Changement MP attendu: %d→70, obtenu: %d→%d",
+			oldMP, lastChange.OldMP, lastChange.NewMP)
+	}
+}
+
+// Test de UnitObserver pour les changements de statut
+func TestUnitObserver_OnStatusChange(t *testing.T) {
+	// Arrange
+	observer := observers.NewUnitObserver()
+	subject := observers.NewCombatSubject()
+	subject.Attach(observer)
+
+	unit := createTestUnit("U1", 50)
+	ctx := &states.CombatContext{}
+
+	// Act - Ajouter un statut
+	unit.AjouterStatut(domain.TypeStatutStun, 2)
+	subject.Notify(states.EventStatusApplied, ctx)
+
+	// Assert
+	statusChanges := observer.GetStatusChanges(unit.ID())
+	if len(statusChanges) == 0 {
+		t.Errorf("L'historique de changements de statut devrait contenir au moins 1 entrée")
+	}
+
+	lastChange := statusChanges[len(statusChanges)-1]
+	if lastChange.StatusType != domain.TypeStatutStun {
+		t.Errorf("Type de statut attendu: %s, obtenu: %s",
+			domain.TypeStatutStun, lastChange.StatusType)
+	}
+}
+
+// Test de ConnectionObserver pour déconnexion
+func TestConnectionObserver_OnDisconnect(t *testing.T) {
+	// Arrange
+	observer := observers.NewConnectionObserver()
+	subject := observers.NewCombatSubject()
+	subject.Attach(observer)
+
+	playerID := "player_123"
+	ctx := &states.CombatContext{
+		PlayerID: playerID,
+	}
+
+	// Act - Simuler une déconnexion
+	subject.Notify(states.EventPlayerDisconnected, ctx)
+
+	// Assert
+	if !observer.IsDisconnected(playerID) {
+		t.Errorf("Le joueur %s devrait être marqué comme déconnecté", playerID)
+	}
+}
+
+// Test de ConnectionObserver pour reconnexion
+func TestConnectionObserver_OnReconnect(t *testing.T) {
+	// Arrange
+	observer := observers.NewConnectionObserver()
+	subject := observers.NewCombatSubject()
+	subject.Attach(observer)
+
+	playerID := "player_123"
+	ctx := &states.CombatContext{
+		PlayerID: playerID,
+	}
+
+	// Act - Déconnexion puis reconnexion
+	subject.Notify(states.EventPlayerDisconnected, ctx)
+	subject.Notify(states.EventPlayerReconnected, ctx)
+
+	// Assert
+	if observer.IsDisconnected(playerID) {
+		t.Errorf("Le joueur %s ne devrait plus être déconnecté", playerID)
+	}
+
+	reconnectionTime := observer.GetReconnectionTime(playerID)
+	if reconnectionTime.IsZero() {
+		t.Errorf("Le temps de reconnexion devrait être enregistré")
+	}
+}
+
+// Test de EventLogger pour l'historique complet
+func TestEventLogger_GetFullHistory(t *testing.T) {
+	// Arrange
+	logger := observers.NewEventLogger()
+	subject := observers.NewCombatSubject()
+	subject.Attach(logger)
+
+	ctx := &states.CombatContext{
+		CurrentState: &states.IdleState{},
+	}
+
+	// Act - Envoyer plusieurs événements
+	subject.Notify(states.EventStateChange, ctx)
+	subject.Notify(states.EventTurnStart, ctx)
+	subject.Notify(states.EventActionConfirmed, ctx)
+	subject.Notify(states.EventTurnEnd, ctx)
+
+	// Assert
+	history := logger.GetFullHistory()
+	if len(history) != 4 {
+		t.Errorf("L'historique devrait contenir 4 événements, obtenu: %d", len(history))
+	}
+
+	// Vérifier l'ordre chronologique
+	for i := 1; i < len(history); i++ {
+		if history[i].Timestamp.Before(history[i-1].Timestamp) {
+			t.Errorf("Les événements devraient être dans l'ordre chronologique")
+		}
+	}
+}
+
+// Test de EventLogger avec filtrage par type
+func TestEventLogger_FilterByType(t *testing.T) {
+	// Arrange
+	logger := observers.NewEventLogger()
+	subject := observers.NewCombatSubject()
+	subject.Attach(logger)
+
+	ctx := &states.CombatContext{}
+
+	// Act - Envoyer différents types d'événements
+	subject.Notify(states.EventStateChange, ctx)
+	subject.Notify(states.EventStateChange, ctx)
+	subject.Notify(states.EventTurnStart, ctx)
+	subject.Notify(states.EventStateChange, ctx)
+
+	// Assert - Filtrer uniquement EventStateChange
+	filteredEvents := logger.GetEventsByType(states.EventStateChange)
+	if len(filteredEvents) != 3 {
+		t.Errorf("Nombre d'événements EventStateChange attendu: 3, obtenu: %d", len(filteredEvents))
+	}
+}
+
+// Test de EventLogger - Replay système
+func TestEventLogger_Replay(t *testing.T) {
+	// Arrange
+	logger := observers.NewEventLogger()
+	subject := observers.NewCombatSubject()
+	subject.Attach(logger)
+
+	ctx := &states.CombatContext{
+		CurrentState: &states.IdleState{},
+	}
+
+	// Act - Enregistrer plusieurs événements
+	subject.Notify(states.EventStateChange, ctx)
+	subject.Notify(states.EventTurnStart, ctx)
+	subject.Notify(states.EventActionConfirmed, ctx)
+
+	// Récupérer l'historique pour replay
+	history := logger.GetFullHistory()
+
+	// Assert - Vérifier que tous les événements sont rejouables
+	replayCount := 0
+	for _, event := range history {
+		if event.EventType != "" && !event.Timestamp.IsZero() {
+			replayCount++
+		}
+	}
+
+	if replayCount != len(history) {
+		t.Errorf("Tous les événements devraient être rejouables, rejouables: %d/%d",
+			replayCount, len(history))
+	}
+}
+
+// Test de notification avec contexte vide (robustesse)
+func TestCombatSubject_NotifyWithEmptyContext(t *testing.T) {
+	// Arrange
+	subject := observers.NewCombatSubject()
+	observer := observers.NewStateObserver()
+	subject.Attach(observer)
+
+	emptyCtx := &states.CombatContext{}
+
+	// Act & Assert - Ne devrait pas paniquer
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Notify ne devrait pas paniquer avec un contexte vide: %v", r)
+		}
+	}()
+
+	subject.Notify(states.EventStateChange, emptyCtx)
+}
+
+// Test de détachement d'un observer non attaché
+func TestCombatSubject_DetachNonExistent(t *testing.T) {
+	// Arrange
+	subject := observers.NewCombatSubject()
+	observer := observers.NewStateObserver()
+
+	initialCount := subject.ObserverCount()
+
+	// Act - Détacher un observer qui n'a jamais été attaché
+	subject.Detach(observer)
+
+	// Assert - Le nombre d'observers ne devrait pas changer
+	finalCount := subject.ObserverCount()
+	if finalCount != initialCount {
+		t.Errorf("Le nombre d'observers ne devrait pas changer: %d → %d",
+			initialCount, finalCount)
+	}
+}

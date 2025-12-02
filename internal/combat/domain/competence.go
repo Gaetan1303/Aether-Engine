@@ -159,6 +159,11 @@ func (c *Competence) DecrémenterCooldown() {
 	}
 }
 
+// SetCooldownActuel définit le cooldown actuel (utilisé par ActiverCooldown dans Unite)
+func (c *Competence) SetCooldownActuel(duree int) {
+	c.cooldownActuel = duree
+}
+
 // CalculerDegats calcule les dégâts totaux en fonction des stats de l'attaquant
 func (c *Competence) CalculerDegats(stats *shared.Stats) int {
 	// Choisir la stat appropriée selon le type

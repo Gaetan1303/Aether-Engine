@@ -8,6 +8,7 @@ import (
 // Strategy Pattern - permet d'avoir plusieurs algorithmes de calcul interchangeables
 type DamageCalculator interface {
 	Calculate(attacker *Unite, defender *Unite, competence *Competence) int
+	CalculerDegats(attacker *Unite, defender *Unite, competence *Competence) int // Alias français
 	GetType() string
 }
 
@@ -50,6 +51,10 @@ func (c *PhysicalDamageCalculator) Calculate(attacker *Unite, defender *Unite, c
 	}
 
 	return int(math.Round(totalDamage))
+}
+
+func (c *PhysicalDamageCalculator) CalculerDegats(attacker *Unite, defender *Unite, competence *Competence) int {
+	return c.Calculate(attacker, defender, competence)
 }
 
 func (c *PhysicalDamageCalculator) GetType() string {
@@ -98,6 +103,10 @@ func (c *MagicalDamageCalculator) Calculate(attacker *Unite, defender *Unite, co
 	return int(math.Round(totalDamage))
 }
 
+func (c *MagicalDamageCalculator) CalculerDegats(attacker *Unite, defender *Unite, competence *Competence) int {
+	return c.Calculate(attacker, defender, competence)
+}
+
 func (c *MagicalDamageCalculator) GetType() string {
 	return "Magical"
 }
@@ -120,6 +129,10 @@ func NewFixedDamageCalculator(amount int) DamageCalculator {
 func (c *FixedDamageCalculator) Calculate(attacker *Unite, defender *Unite, competence *Competence) int {
 	// Ignore complètement les stats - dégâts fixes
 	return c.amount
+}
+
+func (c *FixedDamageCalculator) CalculerDegats(attacker *Unite, defender *Unite, competence *Competence) int {
+	return c.Calculate(attacker, defender, competence)
 }
 
 func (c *FixedDamageCalculator) GetType() string {
@@ -172,6 +185,10 @@ func (c *HybridDamageCalculator) Calculate(attacker *Unite, defender *Unite, com
 	return int(math.Round(totalDamage))
 }
 
+func (c *HybridDamageCalculator) CalculerDegats(attacker *Unite, defender *Unite, competence *Competence) int {
+	return c.Calculate(attacker, defender, competence)
+}
+
 func (c *HybridDamageCalculator) GetType() string {
 	return "Hybrid"
 }
@@ -216,6 +233,10 @@ func (c *ProportionalDamageCalculator) Calculate(attacker *Unite, defender *Unit
 	return int(math.Round(damage))
 }
 
+func (c *ProportionalDamageCalculator) CalculerDegats(attacker *Unite, defender *Unite, competence *Competence) int {
+	return c.Calculate(attacker, defender, competence)
+}
+
 func (c *ProportionalDamageCalculator) GetType() string {
 	return "Proportional"
 }
@@ -252,6 +273,10 @@ func (c *CriticalDamageCalculator) Calculate(attacker *Unite, defender *Unite, c
 	// }
 
 	return baseDamage
+}
+
+func (c *CriticalDamageCalculator) CalculerDegats(attacker *Unite, defender *Unite, competence *Competence) int {
+	return c.Calculate(attacker, defender, competence)
 }
 
 func (c *CriticalDamageCalculator) GetType() string {

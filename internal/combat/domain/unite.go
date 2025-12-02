@@ -86,6 +86,27 @@ func (u *Unite) PeutSeDeplacer() bool {
 	return u.deplacementRestant > 0
 }
 
+// EstBloqueDeplacement vérifie si l'unité est bloquée pour le déplacement
+func (u *Unite) EstBloqueDeplacement() bool {
+	if u.estEliminee {
+		return true
+	}
+
+	// Vérifier les statuts bloquants (Root, Stun, etc.)
+	for _, statut := range u.statuts {
+		if statut.BloqueDeplacement() {
+			return true
+		}
+	}
+
+	return false
+}
+
+// DeplacerVers déplace l'unité vers une position spécifique sans vérification de portée
+func (u *Unite) DeplacerVers(nouvellePosition *shared.Position) {
+	u.position = nouvellePosition
+}
+
 // RecevoirDegats applique des dégâts à l'unité
 func (u *Unite) RecevoirDegats(degats int) {
 	// Soustraire de HP
@@ -110,6 +131,11 @@ func (u *Unite) RecevoirSoin(soin int) {
 	if u.statsActuelles.HP > u.stats.HP {
 		u.statsActuelles.HP = u.stats.HP
 	}
+}
+
+// Soigner est un alias de RecevoirSoin (pour compatibilité)
+func (u *Unite) Soigner(soin int) {
+	u.RecevoirSoin(soin)
 }
 
 // AjouterStatut ajoute un statut à l'unité
@@ -401,4 +427,142 @@ func (u *Unite) ObtenirCompetenceParDefaut() *Competence {
 // AppliquerStatut applique un statut à l'unité (alias de AjouterStatut)
 func (u *Unite) AppliquerStatut(statut *shared.Statut) error {
 	return u.AjouterStatut(statut)
+}
+
+// Step C - Méthodes additionnelles pour les patterns
+
+// SetHP définit les HP actuels (utilisé pour rollback des commandes)
+func (u *Unite) SetHP(hp int) {
+	u.statsActuelles.HP = hp
+	if u.statsActuelles.HP < 0 {
+		u.statsActuelles.HP = 0
+	}
+	if u.statsActuelles.HP > u.stats.HP {
+		u.statsActuelles.HP = u.stats.HP
+	}
+
+	// Mettre à jour le statut d'élimination
+	if u.statsActuelles.HP == 0 {
+		u.estEliminee = true
+	} else if u.estEliminee && u.statsActuelles.HP > 0 {
+		u.estEliminee = false
+	}
+}
+
+// SetMP définit les MP actuels (utilisé pour rollback des commandes)
+func (u *Unite) SetMP(mp int) {
+	u.statsActuelles.MP = mp
+	if u.statsActuelles.MP < 0 {
+		u.statsActuelles.MP = 0
+	}
+	if u.statsActuelles.MP > u.stats.MP {
+		u.statsActuelles.MP = u.stats.MP
+	}
+}
+
+// RestaurerMP restaure des points de magie
+func (u *Unite) RestaurerMP(montant int) {
+	u.statsActuelles.MP += montant
+	if u.statsActuelles.MP > u.stats.MP {
+		u.statsActuelles.MP = u.stats.MP
+	}
+}
+
+// Ressusciter ressuscite l'unité avec un montant de HP
+func (u *Unite) Ressusciter(hp int) {
+	if !u.estEliminee {
+		return // Déjà vivante
+	}
+
+	u.estEliminee = false
+	u.statsActuelles.HP = hp
+	if u.statsActuelles.HP > u.stats.HP {
+		u.statsActuelles.HP = u.stats.HP
+	}
+
+	// Retirer le statut "Dead" si présent
+	u.RetirerStatut(shared.TypeStatutMort)
+}
+
+// EstIA vérifie si l'unité est contrôlée par l'IA
+func (u *Unite) EstIA() bool {
+	// TODO: Ajouter un champ isAI dans la structure Unite
+	// Pour l'instant, on peut considérer que toutes les unités ennemies sont IA
+	// ou utiliser une map externe dans Combat
+	return false // Placeholder
+}
+
+// IAChoisirAction fait choisir une action à l'IA
+func (u *Unite) IAChoisirAction(combat interface{}) interface{} {
+	// TODO: Implémenter logique IA (système d'IA sera dans Step D ou E)
+	// Pour l'instant, retourner WaitCommand par défaut
+	return nil // Placeholder
+}
+
+// EstSilence vérifie si l'unité est sous l'effet Silence (bloque compétences)
+func (u *Unite) EstSilence() bool {
+	for _, statut := range u.statuts {
+		if statut.Type() == shared.TypeStatutSilence {
+			return true
+		}
+	}
+	return false
+}
+
+// EstStun vérifie si l'unité est sous l'effet Stun (bloque toutes actions)
+func (u *Unite) EstStun() bool {
+	for _, statut := range u.statuts {
+		if statut.Type() == shared.TypeStatutStun {
+			return true
+		}
+	}
+	return false
+}
+
+// EstRoot vérifie si l'unité est sous l'effet Root (bloque déplacement)
+func (u *Unite) EstRoot() bool {
+	for _, statut := range u.statuts {
+		if statut.Type() == shared.TypeStatutRoot {
+			return true
+		}
+	}
+	return false
+}
+
+// EstEmpoisonne vérifie si l'unité est empoisonnée
+func (u *Unite) EstEmpoisonne() bool {
+	for _, statut := range u.statuts {
+		if statut.Type() == shared.TypeStatutPoison {
+			return true
+		}
+	}
+	return false
+}
+
+// SkillEstPret vérifie si une compétence est prête (pas en cooldown et ressources suffisantes)
+func (u *Unite) SkillEstPret(skillID CompetenceID) bool {
+	return u.PeutUtiliserCompetence(skillID)
+}
+
+// ActiverCooldown active le cooldown d'une compétence
+func (u *Unite) ActiverCooldown(skillID CompetenceID, duree int) {
+	comp := u.ObtenirCompetence(skillID)
+	if comp != nil {
+		comp.SetCooldownActuel(duree)
+	}
+}
+
+// AppliquerBuff applique un buff temporaire sur une stat
+func (u *Unite) AppliquerBuff(stat string, valeur int, duree int) {
+	// Créer un modificateur de stat
+	mod := shared.ModificateurStat{
+		Stat:   stat,
+		Valeur: valeur,
+	}
+
+	// Appliquer immédiatement
+	u.AppliquerModificateurStat(&mod)
+
+	// TODO: Gérer la durée avec un système de buffs temporaires
+	// Pour l'instant, on applique directement sur les stats actuelles
 }

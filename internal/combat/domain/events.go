@@ -205,6 +205,37 @@ func NewCombatTermineEvent(combatID string, tour int, vainqueur *TeamID) *Combat
 	}
 }
 
+// DeplacementExecuteEvent - Un déplacement a été exécuté avec pathfinding
+type DeplacementExecuteEvent struct {
+	BaseEvent
+	Tour            int
+	UniteID         UnitID
+	PositionDepart  *shared.Position
+	PositionArrivee *shared.Position
+	Chemin          []*shared.Position
+	CoutTotal       int
+}
+
+func NewDeplacementExecuteEvent(
+	combatID string,
+	tour int,
+	uniteID UnitID,
+	depart *shared.Position,
+	arrivee *shared.Position,
+	chemin []*shared.Position,
+	cout int,
+) *DeplacementExecuteEvent {
+	return &DeplacementExecuteEvent{
+		BaseEvent:       BaseEvent{eventType: "DeplacementExecute"},
+		Tour:            tour,
+		UniteID:         uniteID,
+		PositionDepart:  depart,
+		PositionArrivee: arrivee,
+		Chemin:          chemin,
+		CoutTotal:       cout,
+	}
+}
+
 // ActionCombat représente une action à exécuter
 type ActionCombat struct {
 	Type          TypeAction
@@ -228,11 +259,14 @@ const (
 
 // ResultatAction représente le résultat d'une action
 type ResultatAction struct {
-	ActeurID   UnitID
-	TypeAction TypeAction
-	Succes     bool
-	Message    string
-	Effets     []EffetAction
+	ActeurID        UnitID
+	TypeAction      TypeAction
+	Succes          bool
+	Message         string
+	MessageErreur   string
+	Effets          []EffetAction
+	CoutDeplacement int
+	CheminParcouru  []*shared.Position
 }
 
 // EffetAction représente un effet produit par une action

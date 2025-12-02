@@ -198,6 +198,12 @@ func (g *GrilleCombat) EstTraversable(pos *Position) bool {
 	return typeCellule != CelluleObstacle
 }
 
+// Position crée une nouvelle position à partir de coordonnées (pour CommandFactory)
+func (g *GrilleCombat) Position(x, y int) *Position {
+	pos, _ := NewPosition(x, y)
+	return pos
+}
+
 // CoutDeplacement retourne le coût de déplacement pour une cellule
 func (g *GrilleCombat) CoutDeplacement(pos *Position) int {
 	if !g.EstDansLimites(pos) {
@@ -286,6 +292,17 @@ const (
 	StatutDebuff
 	StatutRegeneration
 	StatutBouclier
+	StatutMort    // Ajouté pour Step C
+	StatutSilence // Ajouté pour Step C
+)
+
+// Alias pour compatibilité avec code Step C
+const (
+	TypeStatutMort    = StatutMort
+	TypeStatutSilence = StatutSilence
+	TypeStatutStun    = StatutStun
+	TypeStatutRoot    = StatutRoot
+	TypeStatutPoison  = StatutPoison
 )
 
 // NewStatut crée un nouveau statut

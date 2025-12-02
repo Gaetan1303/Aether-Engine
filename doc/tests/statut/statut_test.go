@@ -1,5 +1,3 @@
-
-## Tests unitaires complets
 package domain_test
 
 import (

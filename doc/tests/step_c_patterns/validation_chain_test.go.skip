@@ -1,0 +1,399 @@
+package step_c_patterns_test
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/aether-engine/aether-engine/internal/combat/domain"
+	"github.com/aether-engine/aether-engine/internal/combat/domain/commands"
+	"github.com/aether-engine/aether-engine/internal/combat/domain/validators"
+	shared "github.com/aether-engine/aether-engine/internal/shared/domain"
+)
+
+// Test de la chaîne complète de validation
+func TestValidationChain_Complete(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	attacker := createTestUnit("A1", 50)
+	attacker.SetPosition(shared.NewPosition(0, 0))
+	attacker.SetMP(100)
+
+	target := createTestUnit("E1", 50)
+	target.SetPosition(shared.NewPosition(1, 0))
+	target.SetHP(100)
+
+	combat.AjouterUnite(attacker)
+	combat.AjouterUnite(target)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateAttackCommand(attacker, target.ID())
+
+	// Créer la chaîne de validation
+	chain := validators.NewValidationChain()
+	chain.AddValidator(validators.NewStatusValidator())
+	chain.AddValidator(validators.NewCostValidator())
+	chain.AddValidator(validators.NewRangeValidator())
+	chain.AddValidator(validators.NewTargetValidator())
+
+	// Act
+	err := chain.Validate(cmd, combat)
+
+	// Assert
+	if err != nil {
+		t.Errorf("La validation devrait réussir pour une commande valide: %v", err)
+	}
+}
+
+// Test de StatusValidator - Unité étourdis
+func TestStatusValidator_StunnedUnit(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	unit := createTestUnit("U1", 50)
+	unit.AjouterStatut(domain.TypeStatutStun, 2) // Étourdi pour 2 tours
+	combat.AjouterUnite(unit)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateWaitCommand(unit)
+
+	validator := validators.NewStatusValidator()
+
+	// Act
+	err := validator.Validate(cmd, combat)
+
+	// Assert
+	if err == nil {
+		t.Errorf("StatusValidator devrait rejeter les actions d'une unité étourdie")
+	}
+}
+
+// Test de StatusValidator - Unité paralysée
+func TestStatusValidator_ParalyzedUnit(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	unit := createTestUnit("U1", 50)
+	unit.AjouterStatut(domain.TypeStatutParalysie, 1)
+	combat.AjouterUnite(unit)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateWaitCommand(unit)
+
+	validator := validators.NewStatusValidator()
+
+	// Act
+	err := validator.Validate(cmd, combat)
+
+	// Assert
+	if err == nil {
+		t.Errorf("StatusValidator devrait rejeter les actions d'une unité paralysée")
+	}
+}
+
+// Test de StatusValidator - Unité normale
+func TestStatusValidator_NormalUnit(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	unit := createTestUnit("U1", 50)
+	combat.AjouterUnite(unit)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateWaitCommand(unit)
+
+	validator := validators.NewStatusValidator()
+
+	// Act
+	err := validator.Validate(cmd, combat)
+
+	// Assert
+	if err != nil {
+		t.Errorf("StatusValidator devrait accepter les actions d'une unité normale: %v", err)
+	}
+}
+
+// Test de CostValidator - MP suffisants
+func TestCostValidator_SufficientMP(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	caster := createTestUnit("U1", 50)
+	caster.SetMP(100)
+
+	target := createTestUnit("U2", 50)
+	combat.AjouterUnite(caster)
+	combat.AjouterUnite(target)
+
+	skill := createTestSkill("fireball", 30, domain.CompetenceMagie)
+	caster.ApprendreCompetence(skill)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateSkillCommand(caster, "fireball", []domain.UnitID{target.ID()})
+
+	validator := validators.NewCostValidator()
+
+	// Act
+	err := validator.Validate(cmd, combat)
+
+	// Assert
+	if err != nil {
+		t.Errorf("CostValidator devrait accepter les compétences avec MP suffisants: %v", err)
+	}
+}
+
+// Test de CostValidator - MP insuffisants
+func TestCostValidator_InsufficientMP(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	caster := createTestUnit("U1", 50)
+	caster.SetMP(10) // Pas assez
+
+	target := createTestUnit("U2", 50)
+	combat.AjouterUnite(caster)
+	combat.AjouterUnite(target)
+
+	skill := createTestSkill("fireball", 30, domain.CompetenceMagie)
+	caster.ApprendreCompetence(skill)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateSkillCommand(caster, "fireball", []domain.UnitID{target.ID()})
+
+	validator := validators.NewCostValidator()
+
+	// Act
+	err := validator.Validate(cmd, combat)
+
+	// Assert
+	if err == nil {
+		t.Errorf("CostValidator devrait rejeter les compétences avec MP insuffisants")
+	}
+}
+
+// Test de RangeValidator - Portée valide
+func TestRangeValidator_ValidRange(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	attacker := createTestUnit("A1", 50)
+	attacker.SetPosition(shared.NewPosition(0, 0))
+
+	target := createTestUnit("E1", 50)
+	target.SetPosition(shared.NewPosition(1, 0)) // Adjacent
+
+	combat.AjouterUnite(attacker)
+	combat.AjouterUnite(target)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateAttackCommand(attacker, target.ID())
+
+	validator := validators.NewRangeValidator()
+
+	// Act
+	err := validator.Validate(cmd, combat)
+
+	// Assert
+	if err != nil {
+		t.Errorf("RangeValidator devrait accepter les cibles à portée: %v", err)
+	}
+}
+
+// Test de RangeValidator - Hors portée
+func TestRangeValidator_OutOfRange(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	attacker := createTestUnit("A1", 50)
+	attacker.SetPosition(shared.NewPosition(0, 0))
+
+	target := createTestUnit("E1", 50)
+	target.SetPosition(shared.NewPosition(9, 9)) // Trop loin
+
+	combat.AjouterUnite(attacker)
+	combat.AjouterUnite(target)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateAttackCommand(attacker, target.ID())
+
+	validator := validators.NewRangeValidator()
+
+	// Act
+	err := validator.Validate(cmd, combat)
+
+	// Assert
+	if err == nil {
+		t.Errorf("RangeValidator devrait rejeter les cibles hors portée")
+	}
+}
+
+// Test de TargetValidator - Cible valide
+func TestTargetValidator_ValidTarget(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	attacker := createTestUnit("A1", 50)
+	attacker.SetTeam(domain.TeamID("team_ally"))
+
+	target := createTestUnit("E1", 50)
+	target.SetTeam(domain.TeamID("team_enemy"))
+	target.SetHP(100)
+
+	combat.AjouterUnite(attacker)
+	combat.AjouterUnite(target)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateAttackCommand(attacker, target.ID())
+
+	validator := validators.NewTargetValidator()
+
+	// Act
+	err := validator.Validate(cmd, combat)
+
+	// Assert
+	if err != nil {
+		t.Errorf("TargetValidator devrait accepter les cibles ennemies vivantes: %v", err)
+	}
+}
+
+// Test de TargetValidator - Cible morte
+func TestTargetValidator_DeadTarget(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	attacker := createTestUnit("A1", 50)
+	attacker.SetTeam(domain.TeamID("team_ally"))
+
+	target := createTestUnit("E1", 50)
+	target.SetTeam(domain.TeamID("team_enemy"))
+	target.SetHP(0) // Morte
+
+	combat.AjouterUnite(attacker)
+	combat.AjouterUnite(target)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateAttackCommand(attacker, target.ID())
+
+	validator := validators.NewTargetValidator()
+
+	// Act
+	err := validator.Validate(cmd, combat)
+
+	// Assert
+	if err == nil {
+		t.Errorf("TargetValidator devrait rejeter les cibles mortes")
+	}
+}
+
+// Test de TargetValidator - Friendly fire
+func TestTargetValidator_FriendlyFire(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	attacker := createTestUnit("A1", 50)
+	attacker.SetTeam(domain.TeamID("team_ally"))
+
+	ally := createTestUnit("A2", 50)
+	ally.SetTeam(domain.TeamID("team_ally"))
+	ally.SetHP(100)
+
+	combat.AjouterUnite(attacker)
+	combat.AjouterUnite(ally)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateAttackCommand(attacker, ally.ID())
+
+	validator := validators.NewTargetValidator()
+
+	// Act
+	err := validator.Validate(cmd, combat)
+
+	// Assert
+	if err == nil {
+		t.Errorf("TargetValidator devrait rejeter les attaques contre des alliés")
+	}
+}
+
+// Test de la chaîne - Échec au premier validateur
+func TestValidationChain_FailAtFirst(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	unit := createTestUnit("U1", 50)
+	unit.AjouterStatut(domain.TypeStatutStun, 2) // Étourdi
+	combat.AjouterUnite(unit)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateWaitCommand(unit)
+
+	// Créer la chaîne complète
+	chain := validators.NewValidationChain()
+	chain.AddValidator(validators.NewStatusValidator())
+	chain.AddValidator(validators.NewCostValidator())
+	chain.AddValidator(validators.NewRangeValidator())
+	chain.AddValidator(validators.NewTargetValidator())
+
+	// Act
+	err := chain.Validate(cmd, combat)
+
+	// Assert - Devrait échouer au StatusValidator (premier maillon)
+	if err == nil {
+		t.Errorf("ValidationChain devrait échouer au premier validateur")
+	}
+}
+
+// Test de la chaîne - Échec au validateur de coût
+func TestValidationChain_FailAtCost(t *testing.T) {
+	// Arrange
+	combat := createTestCombat()
+	caster := createTestUnit("U1", 50)
+	caster.SetMP(10) // Pas assez
+
+	target := createTestUnit("U2", 50)
+	target.SetPosition(shared.NewPosition(1, 0))
+	combat.AjouterUnite(caster)
+	combat.AjouterUnite(target)
+
+	skill := createTestSkill("fireball", 30, domain.CompetenceMagie)
+	caster.ApprendreCompetence(skill)
+
+	factory := commands.NewCommandFactory(combat)
+	cmd, _ := factory.CreateSkillCommand(caster, "fireball", []domain.UnitID{target.ID()})
+
+	// Créer la chaîne
+	chain := validators.NewValidationChain()
+	chain.AddValidator(validators.NewStatusValidator()) // Pass
+	chain.AddValidator(validators.NewCostValidator())   // FAIL ici
+	chain.AddValidator(validators.NewRangeValidator())
+	chain.AddValidator(validators.NewTargetValidator())
+
+	// Act
+	err := chain.Validate(cmd, combat)
+
+	// Assert
+	if err == nil {
+		t.Errorf("ValidationChain devrait échouer au CostValidator")
+	}
+}
+
+// Test de l'ordre de la chaîne de validation
+func TestValidationChain_Order(t *testing.T) {
+	// Arrange
+	chain := validators.NewValidationChain()
+
+	statusVal := validators.NewStatusValidator()
+	costVal := validators.NewCostValidator()
+	rangeVal := validators.NewRangeValidator()
+	targetVal := validators.NewTargetValidator()
+
+	// Act - Ajouter dans l'ordre : Status → Cost → Range → Target
+	chain.AddValidator(statusVal)
+	chain.AddValidator(costVal)
+	chain.AddValidator(rangeVal)
+	chain.AddValidator(targetVal)
+
+	// Assert - Vérifier que la chaîne respecte l'ordre
+	validators := chain.GetValidators()
+	if len(validators) != 4 {
+		t.Errorf("Nombre de validateurs attendu: 4, obtenu: %d", len(validators))
+	}
+
+	// Vérifier l'ordre (basé sur les types)
+	expectedOrder := []string{"StatusValidator", "CostValidator", "RangeValidator", "TargetValidator"}
+	for i, v := range validators {
+		vType := fmt.Sprintf("%T", v)
+		if !strings.Contains(vType, expectedOrder[i]) {
+			t.Errorf("Validateur à la position %d devrait être %s, obtenu: %s",
+				i, expectedOrder[i], vType)
+		}
+	}
+}
