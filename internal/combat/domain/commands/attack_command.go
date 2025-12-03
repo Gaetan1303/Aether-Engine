@@ -37,11 +37,10 @@ func (c *AttackCommand) Validate() error {
 	}
 
 	// 3. Vérifier la portée (attaque basique = portée 1)
-	distance := abs(c.actor.Position().X()-c.target.Position().X()) +
-		abs(c.actor.Position().Y()-c.target.Position().Y())
+	distance := c.actor.Position().Distance(c.target.Position())
 
-	if distance > 1 {
-		return fmt.Errorf("cible hors de portée (distance: %d, portée max: 1)", distance)
+	if distance > domain.PorteeAttaqueMelee {
+		return fmt.Errorf("cible hors de portée (distance: %d, portée max: %d)", distance, domain.PorteeAttaqueMelee)
 	}
 
 	// 4. Vérifier que la cible est dans une équipe ennemie
@@ -98,10 +97,4 @@ func (c *AttackCommand) Rollback() error {
 	}
 
 	return nil
-} // Helper function
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
 }

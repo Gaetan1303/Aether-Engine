@@ -77,7 +77,7 @@ func (s *InitializingState) Handle(ctx *CombatContext, event StateEvent) (Combat
 func (s *InitializingState) validateTeams(ctx *CombatContext) error {
 	equipes := ctx.Combat.Equipes()
 
-	if len(equipes) < 2 {
+	if len(equipes) < domain.MinEquipesPourCombat {
 		return fmt.Errorf("au moins 2 équipes requises pour un combat")
 	}
 

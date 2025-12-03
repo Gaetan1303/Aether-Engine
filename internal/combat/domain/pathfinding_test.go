@@ -315,7 +315,7 @@ func TestPathfindingService_PositionsAccessibles(t *testing.T) {
 
 	// Toutes les positions devraient être à distance <= porteeMax
 	for _, pos := range positions {
-		distance := abs(pos.X()-depart.X()) + abs(pos.Y()-depart.Y())
+		distance := depart.Distance(pos)
 		assert.LessOrEqual(t, distance, porteeMax, "Toutes les positions devraient être dans la portée")
 	}
 }

@@ -56,8 +56,7 @@ func (c *ItemCommand) Validate() error {
 	}
 
 	// 6. Vérifier la portée (objets utilisables à distance)
-	distance := abs(c.actor.Position().X()-c.target.Position().X()) +
-		abs(c.actor.Position().Y()-c.target.Position().Y())
+	distance := c.actor.Position().Distance(c.target.Position())
 
 	if distance > c.item.GetRange() {
 		return fmt.Errorf("cible hors de portée (distance: %d, portée: %d)", distance, c.item.GetRange())

@@ -35,7 +35,7 @@ type Combat struct {
 
 // NewCombat crée une nouvelle instance de combat
 func NewCombat(id string, equipes []*Equipe, grille *shared.GrilleCombat) (*Combat, error) {
-	if len(equipes) < 2 {
+	if len(equipes) < MinEquipesPourCombat {
 		return nil, errors.New("minimum 2 équipes requises")
 	}
 
@@ -174,7 +174,7 @@ func (c *Combat) VerifierConditionsVictoire() string {
 			}
 		}
 		// Sinon victoire/défaite
-		if equipesActives == 1 {
+		if equipesActives == EquipeActiveVictoire {
 			return "VICTORY"
 		}
 		return "DEFEAT"

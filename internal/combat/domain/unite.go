@@ -223,12 +223,12 @@ func (u *Unite) RegenererStatut() {
 
 	// Régénération MP (exemple: 10% par tour)
 	baseStats := u.combat.BaseStats()
-	regenMP := baseStats.MP / 10
+	regenMP := baseStats.MP / RegenMPDiviseur
 	u.combat.RestoreMP(regenMP)
 
 	// Régénération Stamina (exemple: 20% par tour)
 	// Note: Stamina sera géré via combat component
-	regenStamina := baseStats.Stamina / 5
+	regenStamina := baseStats.Stamina / RegenStaminaDiviseur
 	currentStats := u.combat.CurrentStats()
 	currentStats.Stamina += regenStamina
 	if currentStats.Stamina > baseStats.Stamina {
@@ -338,8 +338,8 @@ func (u *Unite) ObtenirCompetenceParDefaut() *Competence {
 		"Attaque Basique",
 		"Attaque physique de base",
 		CompetenceAttaque,
-		1, // Portée 1
-		ZoneEffet{forme: ZoneSingle, taille: 1},
+		PorteeAttaqueMelee,
+		ZoneEffet{forme: ZoneSingle, taille: TailleZoneEffetSingle},
 		0,   // Pas de coût MP
 		0,   // Pas de coût Stamina
 		1,   // Cooldown 1
@@ -391,8 +391,8 @@ func (u *Unite) SetMP(mp int) {
 	baseStats := u.combat.BaseStats()
 
 	currentStats.MP = mp
-	if currentStats.MP < 0 {
-		currentStats.MP = 0
+	if currentStats.MP < SeuilRessourceMinimum {
+		currentStats.MP = SeuilRessourceMinimum
 	}
 	if currentStats.MP > baseStats.MP {
 		currentStats.MP = baseStats.MP

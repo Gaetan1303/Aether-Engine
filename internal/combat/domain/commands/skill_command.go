@@ -60,8 +60,7 @@ func (c *SkillCommand) Validate() error {
 		}
 
 		// Vérifier la portée
-		distance := abs(c.actor.Position().X()-target.Position().X()) +
-			abs(c.actor.Position().Y()-target.Position().Y())
+		distance := c.actor.Position().Distance(target.Position())
 
 		if distance > c.skill.Portee() {
 			return fmt.Errorf("cible %s hors de portée (distance: %d, portée: %d)", target.Nom(), distance, c.skill.Portee())

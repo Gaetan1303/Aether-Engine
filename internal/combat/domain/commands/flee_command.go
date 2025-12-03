@@ -93,11 +93,11 @@ func (c *FleeCommand) calculateFleeProbability() float64 {
 	probability := baseProbability + adjustment
 
 	// Clamp entre 10% et 95%
-	if probability < 10.0 {
-		probability = 10.0
+	if probability < domain.FuiteProbabiliteMin {
+		probability = domain.FuiteProbabiliteMin
 	}
-	if probability > 95.0 {
-		probability = 95.0
+	if probability > domain.FuiteProbabiliteMax {
+		probability = domain.FuiteProbabiliteMax
 	}
 
 	return probability

@@ -7,6 +7,7 @@ import (
 	"github.com/aether-engine/aether-engine/internal/combat/combatinitializer"
 	"github.com/aether-engine/aether-engine/internal/combat/domain"
 	"github.com/aether-engine/aether-engine/internal/combat/domain/states"
+	shared "github.com/aether-engine/aether-engine/internal/shared/domain"
 )
 
 // CombatEngine est le service applicatif qui orchestre les combats
@@ -42,38 +43,25 @@ func NewCombatEngine(eventStore EventStore, publisher EventPublisher) CombatEngi
 }
 
 // DemarrerCombat démarre un nouveau combat
+// Refactoré avec Extract Method Pattern pour réduire la complexité
 func (e *CombatEngineImpl) DemarrerCombat(cmd CommandeDemarrerCombat) (*CombatDTO, error) {
 	// Valider la commande
-	if cmd.CombatID == "" {
-		return nil, errors.New("CombatID requis")
-	}
-
-	if len(cmd.Equipes) < 2 {
-		return nil, errors.New("au moins 2 équipes requises")
+	if err := validateDemarrerCommand(cmd); err != nil {
+		return nil, err
 	}
 
 	// Construire le domain model
-	equipes := make([]*domain.Equipe, 0)
-	for _, equipeDTO := range cmd.Equipes {
-		equipe, err := equipeDTO.ToEquipe()
-		if err != nil {
-			return nil, err
-		}
-		equipes = append(equipes, equipe)
-	}
-
-	grille, err := cmd.Grille.ToGrilleCombat()
+	equipes, grille, err := buildDomainModel(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	// Créer l'agrégat Combat
+	// Créer et démarrer l'agrégat Combat
 	combat, err := domain.NewCombat(cmd.CombatID, equipes, grille)
 	if err != nil {
 		return nil, err
 	}
 
-	// Démarrer le combat
 	if err := combat.Demarrer(); err != nil {
 		return nil, err
 	}
@@ -84,21 +72,10 @@ func (e *CombatEngineImpl) DemarrerCombat(cmd CommandeDemarrerCombat) (*CombatDT
 		return nil, err
 	}
 
-	// Sauvegarder les événements
-	events := combat.GetUncommittedEvents()
-	if err := e.eventStore.AppendEvents(cmd.CombatID, events, 0); err != nil {
+	// Sauvegarder et publier les événements
+	if err := e.saveAndPublishEvents(cmd.CombatID, combat); err != nil {
 		return nil, err
 	}
-
-	// Publier les événements
-	for _, evt := range events {
-		if err := e.publisher.Publish(evt); err != nil {
-			// Log error mais ne pas échouer
-		}
-	}
-
-	// Clear uncommitted events
-	combat.ClearUncommittedEvents()
 
 	// Retourner le DTO
 	dto := FromCombat(combat)
@@ -106,63 +83,21 @@ func (e *CombatEngineImpl) DemarrerCombat(cmd CommandeDemarrerCombat) (*CombatDT
 }
 
 // ExecuterAction exécute une action dans un combat via la State Machine
+// Refactoré avec Extract Method Pattern pour réduire la complexité
 func (e *CombatEngineImpl) ExecuterAction(cmd CommandeExecuterAction) (*ResultatActionDTO, error) {
 	// Charger le combat depuis l'Event Store
-	events, err := e.eventStore.LoadEvents(cmd.CombatID)
-	if err != nil {
-		return nil, err
-	}
-
-	combat, err := domain.ReconstruireDepuisEvenements(events)
+	combat, err := e.loadCombatFromEvents(cmd.CombatID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Convertir le type d'action vers CommandType de la facade
-	var actionType combatfacade.CommandType
-	switch parseTypeAction(cmd.TypeAction) {
-	case domain.TypeActionAttaque:
-		actionType = combatfacade.CommandTypeAttack
-	case domain.TypeActionCompetence:
-		actionType = combatfacade.CommandTypeSkill
-	case domain.TypeActionDeplacement:
-		actionType = combatfacade.CommandTypeMove
-	case domain.TypeActionObjet:
-		actionType = combatfacade.CommandTypeItem
-	case domain.TypeActionPasser:
-		actionType = combatfacade.CommandTypeWait
-	default:
-		actionType = combatfacade.CommandTypeWait
-	}
+	actionType := convertToCommandType(parseTypeAction(cmd.TypeAction))
 
 	// Préparer les paramètres pour ExecutePlayerAction
-	params := make(map[string]interface{})
-
-	if cmd.CibleID != nil {
-		params["targetID"] = domain.UnitID(*cmd.CibleID)
-	}
-
-	if cmd.PositionCible != nil {
-		pos, err := cmd.PositionCible.ToPosition()
-		if err != nil {
-			return nil, err
-		}
-		params["targetX"] = pos.X()
-		params["targetY"] = pos.Y()
-	}
-
-	if cmd.CompetenceID != nil {
-		params["skillID"] = string(*cmd.CompetenceID)
-		if cmd.CibleID != nil {
-			params["targetID"] = domain.UnitID(*cmd.CibleID)
-		}
-	}
-
-	if cmd.ObjetID != nil {
-		params["itemID"] = string(*cmd.ObjetID)
-		if cmd.CibleID != nil {
-			params["targetID"] = domain.UnitID(*cmd.CibleID)
-		}
+	params, err := buildActionParameters(cmd)
+	if err != nil {
+		return nil, err
 	}
 
 	// Exécuter via combatfacade (architecture Step C)
@@ -176,20 +111,10 @@ func (e *CombatEngineImpl) ExecuterAction(cmd CommandeExecuterAction) (*Resultat
 		return nil, err
 	}
 
-	// Sauvegarder les nouveaux événements
-	newEvents := combat.GetUncommittedEvents()
-	if err := e.eventStore.AppendEvents(cmd.CombatID, newEvents, combat.Version()); err != nil {
+	// Sauvegarder et publier les événements
+	if err := e.saveAndPublishEvents(cmd.CombatID, combat); err != nil {
 		return nil, err
 	}
-
-	// Publier les événements
-	for _, evt := range newEvents {
-		if err := e.publisher.Publish(evt); err != nil {
-			// Log error mais ne pas échouer
-		}
-	}
-
-	combat.ClearUncommittedEvents()
 
 	// Convertir le résultat vers DTO
 	resultat := &ResultatActionDTO{
@@ -202,14 +127,10 @@ func (e *CombatEngineImpl) ExecuterAction(cmd CommandeExecuterAction) (*Resultat
 }
 
 // PasserTour passe au tour suivant via la State Machine
+// Refactoré avec Extract Method Pattern pour réduire la duplication
 func (e *CombatEngineImpl) PasserTour(cmd CommandePasserTour) error {
 	// Charger le combat
-	events, err := e.eventStore.LoadEvents(cmd.CombatID)
-	if err != nil {
-		return err
-	}
-
-	combat, err := domain.ReconstruireDepuisEvenements(events)
+	combat, err := e.loadCombatFromEvents(cmd.CombatID)
 	if err != nil {
 		return err
 	}
@@ -226,33 +147,15 @@ func (e *CombatEngineImpl) PasserTour(cmd CommandePasserTour) error {
 		return err
 	}
 
-	// Sauvegarder les événements
-	newEvents := combat.GetUncommittedEvents()
-	if err := e.eventStore.AppendEvents(cmd.CombatID, newEvents, combat.Version()); err != nil {
-		return err
-	}
-
-	// Publier les événements
-	for _, evt := range newEvents {
-		if err := e.publisher.Publish(evt); err != nil {
-			// Log error
-		}
-	}
-
-	combat.ClearUncommittedEvents()
-
-	return nil
+	// Sauvegarder et publier les événements
+	return e.saveAndPublishEvents(cmd.CombatID, combat)
 }
 
 // TerminerCombat termine un combat via la State Machine
+// Refactoré avec Extract Method Pattern pour réduire la duplication
 func (e *CombatEngineImpl) TerminerCombat(cmd CommandeTerminerCombat) error {
 	// Charger le combat
-	events, err := e.eventStore.LoadEvents(cmd.CombatID)
-	if err != nil {
-		return err
-	}
-
-	combat, err := domain.ReconstruireDepuisEvenements(events)
+	combat, err := e.loadCombatFromEvents(cmd.CombatID)
 	if err != nil {
 		return err
 	}
@@ -272,22 +175,8 @@ func (e *CombatEngineImpl) TerminerCombat(cmd CommandeTerminerCombat) error {
 	// Distribuer les récompenses
 	combat.DistribuerRecompenses()
 
-	// Sauvegarder les événements
-	newEvents := combat.GetUncommittedEvents()
-	if err := e.eventStore.AppendEvents(cmd.CombatID, newEvents, combat.Version()); err != nil {
-		return err
-	}
-
-	// Publier les événements
-	for _, evt := range newEvents {
-		if err := e.publisher.Publish(evt); err != nil {
-			// Log error
-		}
-	}
-
-	combat.ClearUncommittedEvents()
-
-	return nil
+	// Sauvegarder et publier les événements
+	return e.saveAndPublishEvents(cmd.CombatID, combat)
 }
 
 // ObtenirCombat récupère l'état d'un combat
@@ -324,6 +213,134 @@ func parseTypeAction(typeStr string) domain.TypeAction {
 	default:
 		return domain.TypeActionPasser
 	}
+}
+
+// --- Helper Methods (Extract Method Pattern) ---
+
+// saveAndPublishEvents sauvegarde et publie les événements (DRY pattern)
+func (e *CombatEngineImpl) saveAndPublishEvents(combatID string, combat *domain.Combat) error {
+	newEvents := combat.GetUncommittedEvents()
+	if len(newEvents) == 0 {
+		return nil
+	}
+
+	// Sauvegarder les événements
+	if err := e.eventStore.AppendEvents(combatID, newEvents, combat.Version()); err != nil {
+		return err
+	}
+
+	// Publier les événements
+	for _, evt := range newEvents {
+		if err := e.publisher.Publish(evt); err != nil {
+			// Log error mais ne pas échouer la transaction
+			// TODO: implémenter proper logging
+		}
+	}
+
+	// Clear uncommitted events
+	combat.ClearUncommittedEvents()
+	return nil
+}
+
+// loadCombatFromEvents charge un combat depuis l'Event Store
+func (e *CombatEngineImpl) loadCombatFromEvents(combatID string) (*domain.Combat, error) {
+	events, err := e.eventStore.LoadEvents(combatID)
+	if err != nil {
+		return nil, err
+	}
+
+	combat, err := domain.ReconstruireDepuisEvenements(events)
+	if err != nil {
+		return nil, err
+	}
+
+	return combat, nil
+}
+
+// validateDemarrerCommand valide la commande DemarrerCombat
+func validateDemarrerCommand(cmd CommandeDemarrerCombat) error {
+	if cmd.CombatID == "" {
+		return errors.New("CombatID requis")
+	}
+
+	if len(cmd.Equipes) < 2 {
+		return errors.New("au moins 2 équipes requises")
+	}
+
+	return nil
+}
+
+// buildDomainModel construit le modèle du domaine depuis les DTOs
+func buildDomainModel(cmd CommandeDemarrerCombat) ([]*domain.Equipe, *shared.GrilleCombat, error) {
+	// Construire les équipes
+	equipes := make([]*domain.Equipe, 0)
+	for _, equipeDTO := range cmd.Equipes {
+		equipe, err := equipeDTO.ToEquipe()
+		if err != nil {
+			return nil, nil, err
+		}
+		equipes = append(equipes, equipe)
+	}
+
+	// Construire la grille
+	grille, err := cmd.Grille.ToGrilleCombat()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return equipes, grille, nil
+}
+
+// convertToCommandType convertit TypeAction vers CommandType de la facade
+func convertToCommandType(typeAction domain.TypeAction) combatfacade.CommandType {
+	switch typeAction {
+	case domain.TypeActionAttaque:
+		return combatfacade.CommandTypeAttack
+	case domain.TypeActionCompetence:
+		return combatfacade.CommandTypeSkill
+	case domain.TypeActionDeplacement:
+		return combatfacade.CommandTypeMove
+	case domain.TypeActionObjet:
+		return combatfacade.CommandTypeItem
+	case domain.TypeActionPasser:
+		return combatfacade.CommandTypeWait
+	default:
+		return combatfacade.CommandTypeWait
+	}
+}
+
+// buildActionParameters construit les paramètres pour ExecutePlayerAction
+func buildActionParameters(cmd CommandeExecuterAction) (map[string]interface{}, error) {
+	params := make(map[string]interface{})
+
+	if cmd.CibleID != nil {
+		params["targetID"] = domain.UnitID(*cmd.CibleID)
+	}
+
+	if cmd.PositionCible != nil {
+		pos, err := cmd.PositionCible.ToPosition()
+		if err != nil {
+			return nil, err
+		}
+		params["targetX"] = pos.X()
+		params["targetY"] = pos.Y()
+	}
+
+	if cmd.CompetenceID != nil {
+		params["skillID"] = string(*cmd.CompetenceID)
+		if cmd.CibleID != nil {
+			params["targetID"] = domain.UnitID(*cmd.CibleID)
+		}
+	}
+
+	if cmd.ObjetID != nil {
+		params["itemID"] = string(*cmd.ObjetID)
+		if cmd.CibleID != nil {
+			params["targetID"] = domain.UnitID(*cmd.CibleID)
+		}
+	}
+
+	return params, nil
 }
 
 // EventStore interface pour persister les événements
