@@ -53,3 +53,48 @@ func newTestStats() *shared.Stats {
 		MOV:     5,
 	}
 }
+
+// newTestCompetence crée une compétence de test simplifiée
+func newTestCompetence(id domain.CompetenceID, nom string, typeComp domain.TypeCompetence) *domain.Competence {
+	zone := domain.ZoneEffet{} // ZoneSingle par défaut
+	return domain.NewCompetence(
+		id,
+		nom,
+		"Description de test",
+		typeComp,
+		5,    // portée
+		zone, // zone
+		10,   // coutMP
+		5,    // coutStamina
+		2,    // cooldown
+		20,   // degatsBase
+		0.5,  // modificateur
+		domain.CibleEnnemis,
+	)
+}
+
+// newTestGrille crée une grille de combat de test
+func newTestGrille(largeur, hauteur int) *shared.GrilleCombat {
+	grille, err := shared.NewGrilleCombat(largeur, hauteur)
+	if err != nil {
+		panic("erreur création grille de test: " + err.Error())
+	}
+	return grille
+}
+
+// newTestCombat crée un combat de test avec 2 équipes
+func newTestCombat(id string) *domain.Combat {
+	joueur1 := "player-1"
+	joueur2 := "player-2"
+
+	equipe1, _ := domain.NewEquipe(domain.TeamID("team-1"), "Héros", "#0000FF", false, &joueur1)
+	equipe2, _ := domain.NewEquipe(domain.TeamID("team-2"), "Ennemis", "#FF0000", true, &joueur2)
+
+	grille := newTestGrille(10, 10)
+
+	combat, err := domain.NewCombat(id, []*domain.Equipe{equipe1, equipe2}, grille)
+	if err != nil {
+		panic("erreur création combat de test: " + err.Error())
+	}
+	return combat
+}

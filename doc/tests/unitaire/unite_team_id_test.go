@@ -1,5 +1,4 @@
 package unitaire
-
 import (
 	"testing"
 
