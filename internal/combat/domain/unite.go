@@ -249,9 +249,6 @@ func (u *Unite) NouveauTour() {
 
 	// Régénération
 	u.RegenererStatut()
-
-	// Décrémenter cooldowns des compétences
-	u.inventory.DecrementAllCooldowns()
 }
 
 // AppliquerModificateurStat applique un modificateur temporaire à une stat
