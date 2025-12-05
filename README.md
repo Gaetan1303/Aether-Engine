@@ -3,11 +3,11 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Tests](https://img.shields.io/badge/Tests-190%20passing-success)](doc/tests/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](/home/billy/Téléchargements/cat.png)](LICENSE)
 
 **Aether Engine** est un moteur de combat tactique inspiré de *Final Fantasy Tactics Advance*, avec architecture Domain-Driven Design (DDD) et 190 tests automatisés.
 
-## 🎮 Démo Jouable (30 secondes)
+## Démo Jouable (30 secondes)
 
 ```bash
 # Démarrage rapide
@@ -19,19 +19,19 @@ go build -o bin/demo cmd/demo/main.go
 ```
 
 **Combat 2 Héros vs 2 Gobelins** avec :
-- ⚔️  Attaques physiques et magiques
-- ✨ Compétences avec MP et cooldowns
-- 🏃 Déplacement tactique sur grille 8x8
-- 🤖 IA ennemie fonctionnelle
-- 🎯 Système de dégâts ATK/DEF et MATK/MDEF
+-   Attaques physiques et magiques
+- Compétences avec MP et cooldowns
+-  Déplacement tactique sur grille 8x8
+-  IA ennemie fonctionnelle
+-  Système de dégâts ATK/DEF et MATK/MDEF
 
 ![Demo Screenshot](cmd/demo/screenshot.png)
 
-**[➡️ Guide complet de la démo](cmd/demo/README.md)**
+**[ Guide complet de la démo](cmd/demo/README.md)**
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prérequis
 - Go 1.21+
@@ -52,7 +52,7 @@ go test ./... -v
 
 ---
 
-## 📚 Documentation Technique
+##  Documentation Technique
 
 **Aether Engine** implémente les règles métier d'un système de combat tactique au tour par tour avec architecture Domain-Driven Design.
 
