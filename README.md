@@ -1,11 +1,60 @@
 
-# Aether-Engine – Serveur Fabric (Combat Tactique Déterministe)
+# Aether-Engine – Combat Tactique Tour par Tour
 
-> **Note de synchronisation** :
-> Les concepts d'agrégats, Value Objects, etc. sont centralisés dans `/doc/agregats.md`.  
-> Les diagrammes et la documentation utilisent le nommage français, sauf pour les termes internationalement utilisés (item, Tank, DPS, Heal, etc.).
+[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/)
+[![Tests](https://img.shields.io/badge/Tests-190%20passing-success)](doc/tests/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Aether Engine** est le **Serveur Fabric** du projet Fantasy Tower : un moteur de combat tactique autoritatif, déterministe et résilient, implémentant les règles métier du système de combat au tour par tour inspiré de *Final Fantasy Tactics Advance*.
+**Aether Engine** est un moteur de combat tactique inspiré de *Final Fantasy Tactics Advance*, avec architecture Domain-Driven Design (DDD) et 190 tests automatisés.
+
+## 🎮 Démo Jouable (30 secondes)
+
+```bash
+# Démarrage rapide
+./start-demo.sh
+
+# Ou manuellement
+go build -o bin/demo cmd/demo/main.go
+./bin/demo
+```
+
+**Combat 2 Héros vs 2 Gobelins** avec :
+- ⚔️  Attaques physiques et magiques
+- ✨ Compétences avec MP et cooldowns
+- 🏃 Déplacement tactique sur grille 8x8
+- 🤖 IA ennemie fonctionnelle
+- 🎯 Système de dégâts ATK/DEF et MATK/MDEF
+
+![Demo Screenshot](cmd/demo/screenshot.png)
+
+**[➡️ Guide complet de la démo](cmd/demo/README.md)**
+
+---
+
+## 🚀 Quick Start
+
+### Prérequis
+- Go 1.21+
+- (Optionnel) Docker pour PostgreSQL/Kafka
+
+### Installation
+
+```bash
+git clone https://github.com/Gaetan1303/Aether-Engine.git
+cd Aether-Engine
+
+# Lancer la démo CLI
+./start-demo.sh
+
+# Ou lancer les tests
+go test ./... -v
+```
+
+---
+
+## 📚 Documentation Technique
+
+**Aether Engine** implémente les règles métier d'un système de combat tactique au tour par tour avec architecture Domain-Driven Design.
 
 ---
 

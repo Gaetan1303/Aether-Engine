@@ -39,17 +39,17 @@ func TestCombatTourComplet_GobelinsVsJoueurs(t *testing.T) {
 	// =============================================================================
 
 	// Guerrier Tank (haute défense, bas DPS)
-	statsGuerrier, _ := shared.NewStats(100, 50, 30, 20, 15, 15, 12, 10, 3)
+	statsGuerrier, _ := shared.NewStats(100, 50, 30, 20, 15, 15, 12, 10, 3, 80)
 	posGuerrier, _ := shared.NewPosition(1, 5)
 	guerrier := domain.NewUnite("J-Guerrier-001", "Guerrier Tank", "team-joueurs", statsGuerrier, posGuerrier)
 
 	// Archer DPS (haute attaque, basse défense)
-	statsArcher, _ := shared.NewStats(80, 40, 25, 25, 8, 20, 10, 14, 4)
+	statsArcher, _ := shared.NewStats(80, 40, 25, 25, 8, 20, 10, 14, 4, 80)
 	posArcher, _ := shared.NewPosition(1, 4)
 	archer := domain.NewUnite("J-Archer-001", "Archer DPS", "team-joueurs", statsArcher, posArcher)
 
 	// Mage (haute attaque magique)
-	statsMage, _ := shared.NewStats(60, 100, 20, 15, 10, 30, 15, 12, 3)
+	statsMage, _ := shared.NewStats(60, 100, 20, 15, 10, 30, 15, 12, 3, 80)
 	posMage, _ := shared.NewPosition(1, 6)
 	mage := domain.NewUnite("J-Mage-001", "Mage Élémentaliste", "team-joueurs", statsMage, posMage)
 
@@ -71,12 +71,12 @@ func TestCombatTourComplet_GobelinsVsJoueurs(t *testing.T) {
 	// =============================================================================
 
 	// Chef Gobelin (équilibré)
-	statsChef, _ := shared.NewStats(70, 40, 25, 18, 10, 18, 10, 11, 3)
+	statsChef, _ := shared.NewStats(70, 40, 25, 18, 10, 18, 10, 11, 3, 80)
 	posChef, _ := shared.NewPosition(8, 5)
 	chef := domain.NewUnite("G-Chef-001", "Chef de Guerre", "team-gobelins", statsChef, posChef)
 
 	// Gobelin Guerrier 1
-	statsGobelin, _ := shared.NewStats(50, 30, 20, 15, 8, 12, 8, 10, 3)
+	statsGobelin, _ := shared.NewStats(50, 30, 20, 15, 8, 12, 8, 10, 3, 80)
 	posGob1, _ := shared.NewPosition(8, 4)
 	gobelinGuerrier1 := domain.NewUnite("G-Guerrier-001", "Gobelin Guerrier", "team-gobelins", statsGobelin, posGob1)
 

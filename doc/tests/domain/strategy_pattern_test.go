@@ -11,8 +11,8 @@ import (
 // TestStrategyPattern_PhysicalDamage teste la stratégie de dégâts physiques
 func TestStrategyPattern_PhysicalDamage(t *testing.T) {
 	// Arrange: Créer attaquant et défenseur
-	statsAttacker, _ := shared.NewStats(100, 50, 50, 50, 10, 20, 10, 10, 5)
-	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 30, 10, 20, 10, 5)
+	statsAttacker, _ := shared.NewStats(100, 50, 50, 50, 10, 20, 10, 10, 5, 80)
+	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 30, 10, 20, 10, 5, 80)
 	positionA, _ := shared.NewPosition(0, 0)
 	positionD, _ := shared.NewPosition(1, 0)
 
@@ -48,8 +48,8 @@ func TestStrategyPattern_PhysicalDamage(t *testing.T) {
 // TestStrategyPattern_MagicalDamage teste la stratégie de dégâts magiques
 func TestStrategyPattern_MagicalDamage(t *testing.T) {
 	// Arrange
-	statsAttacker, _ := shared.NewStats(100, 100, 50, 20, 10, 60, 10, 10, 5)
-	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 30, 10, 40, 10, 5)
+	statsAttacker, _ := shared.NewStats(100, 100, 50, 20, 10, 60, 10, 10, 5, 80)
+	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 30, 10, 40, 10, 5, 80)
 	positionA, _ := shared.NewPosition(0, 0)
 	positionD, _ := shared.NewPosition(1, 0)
 
@@ -86,7 +86,7 @@ func TestStrategyPattern_MagicalDamage(t *testing.T) {
 // TestStrategyPattern_FixedDamage teste la stratégie de dégâts fixes
 func TestStrategyPattern_FixedDamage(t *testing.T) {
 	// Arrange
-	statsAttacker, _ := shared.NewStats(100, 50, 50, 50, 10, 20, 10, 10, 5)
+	statsAttacker, _ := shared.NewStats(100, 50, 50, 50, 10, 20, 10, 10, 5, 80)
 	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 99, 10, 99, 10, 5) // DEF/MDEF énormes
 	positionA, _ := shared.NewPosition(0, 0)
 	positionD, _ := shared.NewPosition(1, 0)
@@ -108,8 +108,8 @@ func TestStrategyPattern_FixedDamage(t *testing.T) {
 // TestStrategyPattern_HybridDamage teste la stratégie de dégâts hybrides
 func TestStrategyPattern_HybridDamage(t *testing.T) {
 	// Arrange
-	statsAttacker, _ := shared.NewStats(100, 50, 50, 40, 10, 40, 10, 10, 5)
-	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 20, 10, 20, 10, 5)
+	statsAttacker, _ := shared.NewStats(100, 50, 50, 40, 10, 40, 10, 10, 5, 80)
+	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 20, 10, 20, 10, 5, 80)
 	positionA, _ := shared.NewPosition(0, 0)
 	positionD, _ := shared.NewPosition(1, 0)
 
@@ -144,7 +144,7 @@ func TestStrategyPattern_HybridDamage(t *testing.T) {
 // TestStrategyPattern_ProportionalDamage teste les dégâts proportionnels aux HP
 func TestStrategyPattern_ProportionalDamage(t *testing.T) {
 	// Arrange
-	statsAttacker, _ := shared.NewStats(100, 50, 50, 40, 10, 40, 10, 10, 5)
+	statsAttacker, _ := shared.NewStats(100, 50, 50, 40, 10, 40, 10, 10, 5, 80)
 	statsDefender, _ := shared.NewStats(1000, 50, 50, 10, 20, 10, 20, 10, 5) // 1000 HP
 	positionA, _ := shared.NewPosition(0, 0)
 	positionD, _ := shared.NewPosition(1, 0)
@@ -166,8 +166,8 @@ func TestStrategyPattern_ProportionalDamage(t *testing.T) {
 // TestStrategyPattern_SwitchingStrategies teste le changement dynamique de stratégie
 func TestStrategyPattern_SwitchingStrategies(t *testing.T) {
 	// Arrange: Créer un combat
-	statsAttacker, _ := shared.NewStats(100, 50, 50, 50, 10, 50, 10, 10, 5)
-	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 30, 10, 30, 10, 5)
+	statsAttacker, _ := shared.NewStats(100, 50, 50, 50, 10, 50, 10, 10, 5, 80)
+	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 30, 10, 30, 10, 5, 80)
 	positionA, _ := shared.NewPosition(0, 0)
 	positionD, _ := shared.NewPosition(5, 5)
 

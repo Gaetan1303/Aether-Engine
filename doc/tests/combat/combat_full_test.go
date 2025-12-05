@@ -32,12 +32,12 @@ func TestCombatComplet_GobelinsVsJoueurs(t *testing.T) {
 	// =============================================================================
 	// PHASE 2: CRÉATION DE L'ÉQUIPE DES JOUEURS (6 unités)
 	// =============================================================================
-	statsGuerrier, _ := shared.NewStats(150, 100, 50, 25, 15, 18, 12, 10, 3)
-	statsArcher, _ := shared.NewStats(100, 80, 40, 18, 12, 15, 10, 20, 4)
-	statsMage, _ := shared.NewStats(80, 150, 60, 12, 8, 25, 20, 14, 3)
-	statsClerc, _ := shared.NewStats(120, 120, 50, 15, 12, 20, 18, 12, 3)
-	statsRodeur, _ := shared.NewStats(110, 90, 45, 20, 14, 16, 11, 18, 5)
-	statsPaladin, _ := shared.NewStats(140, 110, 55, 23, 16, 17, 15, 11, 3)
+	statsGuerrier, _ := shared.NewStats(150, 100, 50, 25, 15, 18, 12, 10, 3, 80)
+	statsArcher, _ := shared.NewStats(100, 80, 40, 18, 12, 15, 10, 20, 4, 80)
+	statsMage, _ := shared.NewStats(80, 150, 60, 12, 8, 25, 20, 14, 3, 80)
+	statsClerc, _ := shared.NewStats(120, 120, 50, 15, 12, 20, 18, 12, 3, 80)
+	statsRodeur, _ := shared.NewStats(110, 90, 45, 20, 14, 16, 11, 18, 5, 80)
+	statsPaladin, _ := shared.NewStats(140, 110, 55, 23, 16, 17, 15, 11, 3, 80)
 
 	// Positions de départ des joueurs (côté gauche)
 	posGuerrier, _ := shared.NewPosition(1, 7)
@@ -64,9 +64,9 @@ func TestCombatComplet_GobelinsVsJoueurs(t *testing.T) {
 	// =============================================================================
 	// PHASE 3: CRÉATION DE L'ÉQUIPE DES GOBELINS (6 unités)
 	// =============================================================================
-	statsGobelin, _ := shared.NewStats(60, 30, 25, 12, 8, 10, 6, 15, 4)
-	statsGobChef, _ := shared.NewStats(90, 50, 35, 18, 12, 14, 9, 14, 3)
-	statsGobShaмаn, _ := shared.NewStats(50, 80, 30, 8, 6, 16, 12, 13, 3)
+	statsGobelin, _ := shared.NewStats(60, 30, 25, 12, 8, 10, 6, 15, 4, 80)
+	statsGobChef, _ := shared.NewStats(90, 50, 35, 18, 12, 14, 9, 14, 3, 80)
+	statsGobShaмаn, _ := shared.NewStats(50, 80, 30, 8, 6, 16, 12, 13, 3, 80)
 
 	// Positions de départ des gobelins (côté droit)
 	posGob1, _ := shared.NewPosition(13, 7)  // Gobelin Chef (centre)

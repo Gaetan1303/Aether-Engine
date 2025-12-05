@@ -65,10 +65,11 @@ type Stats struct {
 	MDEF    int // Défense magique
 	SPD     int // Vitesse (initiative)
 	MOV     int // Mouvement (cases par tour)
+	ATH     int // Attack Hit (chance de toucher en %)
 }
 
 // NewStats crée un nouveau set de stats
-func NewStats(hp, mp, stamina, atk, def, matk, mdef, spd, mov int) (*Stats, error) {
+func NewStats(hp, mp, stamina, atk, def, matk, mdef, spd, mov, ath int) (*Stats, error) {
 	if hp <= 0 || mp < 0 || stamina < 0 {
 		return nil, errors.New("HP doit être > 0, MP et Stamina >= 0")
 	}
@@ -77,6 +78,9 @@ func NewStats(hp, mp, stamina, atk, def, matk, mdef, spd, mov int) (*Stats, erro
 	}
 	if spd <= 0 || mov <= 0 {
 		return nil, errors.New("SPD et MOV doivent être > 0")
+	}
+	if ath < 0 || ath > 100 {
+		return nil, errors.New("ATH doit être entre 0 et 100")
 	}
 
 	return &Stats{
@@ -89,6 +93,7 @@ func NewStats(hp, mp, stamina, atk, def, matk, mdef, spd, mov int) (*Stats, erro
 		MDEF:    mdef,
 		SPD:     spd,
 		MOV:     mov,
+		ATH:     ath,
 	}, nil
 }
 
@@ -98,6 +103,7 @@ func (s *Stats) Clone() *Stats {
 		HP:      s.HP,
 		MP:      s.MP,
 		Stamina: s.Stamina,
+		ATH:     s.ATH,
 		ATK:     s.ATK,
 		DEF:     s.DEF,
 		MATK:    s.MATK,
@@ -117,7 +123,8 @@ func (s *Stats) Equals(autre *Stats) bool {
 		s.MATK == autre.MATK &&
 		s.MDEF == autre.MDEF &&
 		s.SPD == autre.SPD &&
-		s.MOV == autre.MOV
+		s.MOV == autre.MOV &&
+		s.ATH == autre.ATH
 }
 
 // GrilleCombat représente la grille de combat (Value Object)

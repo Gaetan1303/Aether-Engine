@@ -42,6 +42,7 @@ type StatsDTO struct {
 	MDEF    int
 	SPD     int
 	MOV     int
+	ATH     int
 }
 
 // PositionDTO représente une position dans les commandes
@@ -135,6 +136,10 @@ func (dto UniteDTO) ToUnite() (*domain.Unite, error) {
 
 // ToStats convertit StatsDTO vers shared.Stats
 func (dto StatsDTO) ToStats() (*shared.Stats, error) {
+	ath := dto.ATH
+	if ath == 0 {
+		ath = 80 // Valeur par défaut si non spécifié
+	}
 	return shared.NewStats(
 		dto.HP,
 		dto.MP,
@@ -145,6 +150,7 @@ func (dto StatsDTO) ToStats() (*shared.Stats, error) {
 		dto.MDEF,
 		dto.SPD,
 		dto.MOV,
+		ath,
 	)
 }
 

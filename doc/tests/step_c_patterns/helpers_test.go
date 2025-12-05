@@ -38,7 +38,7 @@ func createTestUnit(id string, speed int) *domain.Unite {
 // createTestUnitWithTeam crée une unité avec une team spécifique
 func createTestUnitWithTeam(id string, speed int, teamID string) *domain.Unite {
 	// HP, MP, Stamina, ATK, DEF, MATK, MDEF, SPD, MOV
-	stats, err := shared.NewStats(100, 50, 20, 15, 10, 15, 10, speed, 5)
+	stats, err := shared.NewStats(100, 50, 20, 15, 10, 15, 10, speed, 5, 80)
 	if err != nil {
 		panic(err)
 	}

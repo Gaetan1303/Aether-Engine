@@ -13,7 +13,7 @@ func newTestPosition(x, y int) *shared.Position {
 }
 
 func newTestStats(hp, mp, stamina, atk, def, matk, mdef, spd, mov int) *shared.Stats {
-	stats, _ := shared.NewStats(hp, mp, stamina, atk, def, matk, mdef, spd, mov)
+	stats, _ := shared.NewStats(hp, mp, stamina, atk, def, matk, mdef, spd, mov, 80)
 	return stats
 }
 
