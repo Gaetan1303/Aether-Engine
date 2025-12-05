@@ -3,7 +3,6 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Tests](https://img.shields.io/badge/Tests-190%20passing-success)](doc/tests/)
-[![License](/home/billy/Téléchargements/cat.png)](LICENSE)
 
 **Aether Engine** est un moteur de combat tactique inspiré de *Final Fantasy Tactics Advance*, avec architecture Domain-Driven Design (DDD) et 190 tests automatisés.
 
