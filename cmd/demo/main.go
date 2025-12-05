@@ -323,6 +323,17 @@ func (g *GameDemo) executerAttaque(attaquant *domain.Unite, cibleID string) bool
 		return false
 	}
 
+	// Vérifier la portée (attaque de base = corps-à-corps = distance 1)
+	posAttaquant := attaquant.Position()
+	posCible := cible.Position()
+	distance := abs(posAttaquant.X()-posCible.X()) + abs(posAttaquant.Y()-posCible.Y())
+
+	if distance > 1 {
+		fmt.Printf(ColorRed+"❌ Cible trop éloignée! Distance:%d (portée CAC:1)\n"+ColorReset, distance)
+		fmt.Printf(ColorYellow + "💡 Utilisez 'move' pour vous rapprocher ou 'skill' pour une compétence à distance\n" + ColorReset)
+		return false
+	}
+
 	// Vérifier chance de toucher
 	ath := attaquant.Stats().ATH
 	chanceToucher := rand.Intn(100) + 1 // 1-100
