@@ -75,7 +75,7 @@ func TestDemarrerCombatWithStepC(t *testing.T) {
 			{
 				ID:       "unit1",
 				Nom:      "Test Unit",
-				TeamID:   "team1",
+				EquipeID: "team1",
 				Stats:    StatsDTO{HP: 100, MP: 50, SPD: 10, MOV: 3, ATK: 10, DEF: 5},
 				Position: PositionDTO{X: 0, Y: 0},
 			},
@@ -90,7 +90,7 @@ func TestDemarrerCombatWithStepC(t *testing.T) {
 			{
 				ID:       "unit2",
 				Nom:      "Test Unit 2",
-				TeamID:   "team2",
+				EquipeID: "team2",
 				Stats:    StatsDTO{HP: 100, MP: 50, SPD: 10, MOV: 3, ATK: 10, DEF: 5},
 				Position: PositionDTO{X: 5, Y: 5},
 			},

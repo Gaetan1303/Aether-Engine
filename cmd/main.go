@@ -50,6 +50,10 @@ func main() {
 	// Créer le router Gin
 	router := gin.Default()
 
+	// Swagger UI et OpenAPI
+	router.Static("/swagger", "./swaggerui")
+	router.StaticFile("/openapi.yaml", "./openapi.yaml")
+
 	// Health check
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
@@ -59,7 +63,7 @@ func main() {
 	combatHandler := handlers.NewCombatHandler(combatEngine)
 
 	// Enregistrer les routes
-	api := router.Group("/api/v1")
+	api := router.Group("/aether/v1")
 	combatHandler.RegisterRoutes(api)
 
 	// Démarrer le serveur

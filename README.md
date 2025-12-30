@@ -198,9 +198,9 @@ Command (POST /actions) → Agrégat → Événements → Event Store (PostgreSQ
    - Permet aux autres services de réagir (Observer, BigData)
 
 5. **API REST pour commandes**
-   - `POST /api/v1/combats` (démarrer combat)
-   - `POST /api/v1/combats/:id/actions` (exécuter action)
-   - `GET /api/v1/combats/:id` (état combat via projection)
+   - `POST /aether/v1/combats` (démarrer combat)
+   - `POST /aether/v1/combats/:id/actions` (exécuter action)
+   - `GET /aether/v1/combats/:id` (état combat via projection)
 
 ### Ce que le Fabric NE fait PAS
 
@@ -468,7 +468,7 @@ Le serveur Fabric expose les endpoints REST suivants :
 
 ```http
 # Démarrer un nouveau combat
-POST /api/v1/combats
+POST /aether/v1/combats
 Content-Type: application/json
 
 {
@@ -477,10 +477,10 @@ Content-Type: application/json
 }
 
 # Obtenir l'état d'un combat
-GET /api/v1/combats/:id
+GET /aether/v1/combats/:id
 
 # Exécuter une action
-POST /api/v1/combats/:id/actions
+POST /aether/v1/combats/:id/actions
 Content-Type: application/json
 
 {
@@ -490,10 +490,10 @@ Content-Type: application/json
 }
 
 # Passer au tour suivant
-POST /api/v1/combats/:id/tour-suivant
+POST /aether/v1/combats/:id/tour-suivant
 
 # Terminer un combat
-POST /api/v1/combats/:id/terminer
+POST /aether/v1/combats/:id/terminer
 ```
 
 ### Health Check

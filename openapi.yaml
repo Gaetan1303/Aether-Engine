@@ -1,0 +1,118 @@
+openapi: 3.0.3
+info:
+  title: Aether Engine API
+  description: API REST pour la gestion des combats tactiques tour par tour
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/aether/v1
+paths:
+  /combats:
+    post:
+      summary: Démarrer un nouveau combat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                equipes:
+                  type: array
+                  items:
+                    type: object
+                grille:
+                  type: object
+      responses:
+        '201':
+          description: Combat créé
+          content:
+            application/json:
+              schema:
+                type: object
+  /combats/{id}:
+    get:
+      summary: Obtenir l'état d'un combat
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: État du combat
+          content:
+            application/json:
+              schema:
+                type: object
+  /combats/{id}/actions:
+    post:
+      summary: Exécuter une action dans un combat
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uniteID:
+                  type: string
+                typeAction:
+                  type: string
+                cibleID:
+                  type: string
+      responses:
+        '200':
+          description: Résultat de l'action
+          content:
+            application/json:
+              schema:
+                type: object
+  /combats/{id}/tour-suivant:
+    post:
+      summary: Passer au tour suivant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tour suivant effectué
+          content:
+            application/json:
+              schema:
+                type: object
+  /combats/{id}/terminer:
+    post:
+      summary: Terminer un combat
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Combat terminé
+          content:
+            application/json:
+              schema:
+                type: object
+  /ping:
+    get:
+      summary: Vérifier l'état du serveur
+      responses:
+        '200':
+          description: Pong
+          content:
+            application/json:
+              schema:
+                type: object

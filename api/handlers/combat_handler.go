@@ -20,7 +20,7 @@ func NewCombatHandler(engine application.CombatEngine) *CombatHandler {
 }
 
 // DemarrerCombat démarre un nouveau combat
-// POST /api/v1/combats
+// POST /aether/v1/combats
 func (h *CombatHandler) DemarrerCombat(c *gin.Context) {
 	var cmd application.CommandeDemarrerCombat
 
@@ -39,7 +39,7 @@ func (h *CombatHandler) DemarrerCombat(c *gin.Context) {
 }
 
 // ExecuterAction exécute une action dans un combat
-// POST /api/v1/combats/:id/actions
+// POST /aether/v1/combats/:id/actions
 func (h *CombatHandler) ExecuterAction(c *gin.Context) {
 	combatID := c.Param("id")
 
@@ -61,7 +61,7 @@ func (h *CombatHandler) ExecuterAction(c *gin.Context) {
 }
 
 // PasserTour passe au tour suivant
-// POST /api/v1/combats/:id/tour-suivant
+// POST /aether/v1/combats/:id/tour-suivant
 func (h *CombatHandler) PasserTour(c *gin.Context) {
 	combatID := c.Param("id")
 
@@ -78,7 +78,7 @@ func (h *CombatHandler) PasserTour(c *gin.Context) {
 }
 
 // TerminerCombat termine un combat
-// POST /api/v1/combats/:id/terminer
+// POST /aether/v1/combats/:id/terminer
 func (h *CombatHandler) TerminerCombat(c *gin.Context) {
 	combatID := c.Param("id")
 
@@ -95,7 +95,7 @@ func (h *CombatHandler) TerminerCombat(c *gin.Context) {
 }
 
 // ObtenirCombat récupère l'état d'un combat
-// GET /api/v1/combats/:id
+// GET /aether/v1/combats/:id
 func (h *CombatHandler) ObtenirCombat(c *gin.Context) {
 	combatID := c.Param("id")
 

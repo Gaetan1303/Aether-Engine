@@ -33,11 +33,11 @@ Le binaire `fabric` gère :
    - Permet aux services Observer, BigData, etc. de réagir
 
 5. **API REST**
-   - `POST /api/v1/combats` - Démarrer un combat
-   - `GET /api/v1/combats/:id` - Obtenir l'état d'un combat
-   - `POST /api/v1/combats/:id/actions` - Exécuter une action
-   - `POST /api/v1/combats/:id/tour-suivant` - Passer au tour suivant
-   - `POST /api/v1/combats/:id/terminer` - Terminer un combat
+  - `POST /aether/v1/combats` - Démarrer un combat
+  - `GET /aether/v1/combats/:id` - Obtenir l'état d'un combat
+  - `POST /aether/v1/combats/:id/actions` - Exécuter une action
+  - `POST /aether/v1/combats/:id/tour-suivant` - Passer au tour suivant
+  - `POST /aether/v1/combats/:id/terminer` - Terminer un combat
 
 ## Contenu du binaire
 
@@ -116,7 +116,7 @@ curl http://localhost:8080/ping
 # Réponse: {"message":"pong"}
 
 # Démarrer un combat (exemple)
-curl -X POST http://localhost:8080/api/v1/combats \
+curl -X POST http://localhost:8080/aether/v1/combats \
   -H "Content-Type: application/json" \
   -d '{
     "equipes": [...],

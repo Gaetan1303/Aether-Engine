@@ -17,7 +17,7 @@ type EquipeDTO struct {
 	ID       string
 	Nom      string
 	Couleur  string
-	IsIA     bool
+	EstIA    bool
 	JoueurID *string
 	Membres  []UniteDTO
 }
@@ -26,7 +26,7 @@ type EquipeDTO struct {
 type UniteDTO struct {
 	ID       string
 	Nom      string
-	TeamID   string
+	EquipeID string
 	Stats    StatsDTO
 	Position PositionDTO
 }
@@ -126,7 +126,7 @@ func (dto UniteDTO) ToUnite() (*domain.Unite, error) {
 	unite := domain.NewUnite(
 		domain.UnitID(dto.ID),
 		dto.Nom,
-		domain.TeamID(dto.TeamID),
+		domain.TeamID(dto.EquipeID),
 		stats,
 		position,
 	)
@@ -170,7 +170,7 @@ func (dto EquipeDTO) ToEquipe() (*domain.Equipe, error) {
 		domain.TeamID(dto.ID),
 		dto.Nom,
 		dto.Couleur,
-		dto.IsIA,
+		dto.EstIA,
 		dto.JoueurID,
 	)
 	if err != nil {
@@ -194,10 +194,10 @@ func (dto EquipeDTO) ToEquipe() (*domain.Equipe, error) {
 // FromUnite convertit domain.Unite vers UniteDTO
 func FromUnite(unite *domain.Unite) UniteDTO {
 	return UniteDTO{
-		ID:     string(unite.ID()),
-		Nom:    unite.Nom(),
-		TeamID: string(unite.TeamID()),
-		Stats:  FromStats(unite.Stats()),
+		ID:       string(unite.ID()),
+		Nom:      unite.Nom(),
+		EquipeID: string(unite.TeamID()),
+		Stats:    FromStats(unite.Stats()),
 		Position: PositionDTO{
 			X: unite.Position().X(),
 			Y: unite.Position().Y(),
@@ -231,7 +231,7 @@ func FromEquipe(equipe *domain.Equipe) EquipeDTO {
 		ID:       string(equipe.ID()),
 		Nom:      equipe.Nom(),
 		Couleur:  equipe.Couleur(),
-		IsIA:     equipe.IsIA(),
+		EstIA:    equipe.IsIA(),
 		JoueurID: equipe.JoueurID(),
 		Membres:  membres,
 	}
