@@ -61,10 +61,12 @@ func main() {
 
 	// Créer les handlers
 	combatHandler := handlers.NewCombatHandler(combatEngine)
+	characterHandler := handlers.NewCharacterHandler()
 
 	// Enregistrer les routes
 	api := router.Group("/aether/v1")
 	combatHandler.RegisterRoutes(api)
+	characterHandler.RegisterRoutes(api)
 
 	// Démarrer le serveur
 	log.Printf("Serveur Fabric démarré sur le port %s", port)
