@@ -152,6 +152,17 @@ func (jm *JobManager) GetAllJobs() []*Job {
 	return jobs
 }
 
+// IsJobDepart vérifie si un job est un job de départ
+func (jm *JobManager) IsJobDepart(jobID JobID) bool {
+	jobsDepart := []JobID{JobGuerrier, JobMage, JobArcher, JobVoleur, JobClerc}
+	for _, job := range jobsDepart {
+		if job == jobID {
+			return true
+		}
+	}
+	return false
+}
+
 // PeutChangerJob vérifie si un joueur peut changer vers un job
 func (jm *JobManager) PeutChangerJob(joueur *Joueur, nouveauJobID JobID) error {
 	job, err := jm.GetJob(nouveauJobID)

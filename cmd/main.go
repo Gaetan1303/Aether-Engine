@@ -9,6 +9,7 @@ import (
 	"github.com/aether-engine/aether-engine/internal/combat/application"
 	"github.com/aether-engine/aether-engine/internal/combat/infrastructure"
 	"github.com/aether-engine/aether-engine/pkg/eventbus"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -50,6 +51,21 @@ func main() {
 	// Créer le router Gin
 	router := gin.Default()
 
+	// Configuration CORS pour Angular
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{
+		"http://localhost:4200", // Angular dev server
+		"http://localhost:3000", // Alternative dev port
+		"http://127.0.0.1:4200",
+	}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{
+		"Origin", "Content-Type", "Accept", "Authorization", 
+		"Cache-Control", "X-Requested-With",
+	}
+	config.AllowCredentials = true
+	router.Use(cors.New(config))
+
 	// Swagger UI et OpenAPI
 	router.Static("/swagger", "./swaggerui")
 	router.StaticFile("/openapi.yaml", "./openapi.yaml")
@@ -61,14 +77,18 @@ func main() {
 
 	// Créer les handlers
 	combatHandler := handlers.NewCombatHandler(combatEngine)
-	// characterHandler := handlers.NewCharacterHandler() // Ancien système
 	joueurHandler := handlers.NewJoueurHandler() // Nouveau système
+	wsHandler := handlers.NewWebSocketHandler()  // WebSocket temps réel
+	
+	// Handler de gameplay (lien joueur <-> combat)
+	gameHandler := handlers.NewGameHandler(joueurHandler.GetJoueurService(), combatEngine)
 
 	// Enregistrer les routes
 	api := router.Group("/aether/v1")
 	combatHandler.RegisterRoutes(api)
-	// characterHandler.RegisterRoutes(api) // Ancien système
 	joueurHandler.RegisterRoutes(api) // Nouveau système
+	gameHandler.RegisterRoutes(api)   // Gameplay MVP
+	wsHandler.RegisterRoutes(api)     // WebSocket temps réel
 
 	// Démarrer le serveur
 	log.Printf("Serveur Fabric démarré sur le port %s", port)

@@ -1,7 +1,11 @@
 package domain
 
-// CompetenceID identifiant d'une compétence
-type CompetenceID string
+import (
+	shared "github.com/aether-engine/aether-engine/internal/shared/domain"
+)
+
+// CompetenceID référence partagée avec le système de combat
+type CompetenceID = shared.CompetenceID
 
 // Types de compétences
 type TypeCompetence string

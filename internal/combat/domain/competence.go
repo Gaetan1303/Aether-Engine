@@ -4,8 +4,8 @@ import (
 	shared "github.com/aether-engine/aether-engine/internal/shared/domain"
 )
 
-// CompetenceID est l'identifiant unique d'une compétence
-type CompetenceID string
+// CompetenceID référence partagée avec le système de joueur
+type CompetenceID = shared.CompetenceID
 
 // Competence représente une compétence utilisable par une unité
 type Competence struct {

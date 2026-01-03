@@ -223,3 +223,32 @@ func (j *Joueur) verifierMonteeNiveau() {
 		// j.SlotsCompetences.DebloquerCompetences(j.JobActuel, j.NiveauJobs[j.JobActuel])
 	}
 }
+
+// ToUnite convertit le joueur en unité de combat
+// Pont crucial entre le système de joueur et le système de combat
+func (j *Joueur) ToUnite(uniteID string, teamID string, position *shared.Position) (*UniteFromJoueur, error) {
+	// Obtenir les stats effectives du joueur
+	statsEffectives := j.GetStatsEffectives()
+
+	// Créer les données nécessaires pour créer une Unite
+	uniteData := &UniteFromJoueur{
+		ID:               uniteID,
+		Nom:              j.Nom,
+		TeamID:           teamID,
+		Position:         position,
+		Stats:            *statsEffectives,
+		CompetencesJoueur: j.SlotsCompetences.GetCompetencesActives(),
+	}
+
+	return uniteData, nil
+}
+
+// UniteFromJoueur contient toutes les données nécessaires pour créer une Unite depuis un Joueur
+type UniteFromJoueur struct {
+	ID               string
+	Nom              string
+	TeamID           string
+	Position         *shared.Position
+	Stats            shared.Stats
+	CompetencesJoueur []CompetenceID // Compétences que le joueur a équipées
+}
