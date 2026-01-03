@@ -1,14 +1,16 @@
 openapi: 3.0.3
 info:
   title: Aether Engine API
-  description: API REST pour la gestion des combats tactiques tour par tour
-  version: 1.0.0
+  description: API REST pour la gestion des combats tactiques tour par tour et création de joueurs personnalisés
+  version: 2.0.0
 servers:
   - url: http://localhost:8080/aether/v1
 paths:
   /combats:
     post:
       summary: Démarrer un nouveau combat
+      tags:
+        - Combats
       requestBody:
         required: true
         content:
@@ -32,6 +34,8 @@ paths:
   /combats/{id}:
     get:
       summary: Obtenir l'état d'un combat
+      tags:
+        - Combats
       parameters:
         - name: id
           in: path
@@ -48,6 +52,8 @@ paths:
   /combats/{id}/actions:
     post:
       summary: Exécuter une action dans un combat
+      tags:
+        - Combats
       parameters:
         - name: id
           in: path
@@ -77,6 +83,8 @@ paths:
   /combats/{id}/tour-suivant:
     post:
       summary: Passer au tour suivant
+      tags:
+        - Combats
       parameters:
         - name: id
           in: path
@@ -93,6 +101,8 @@ paths:
   /combats/{id}/terminer:
     post:
       summary: Terminer un combat
+      tags:
+        - Combats
       parameters:
         - name: id
           in: path
@@ -106,6 +116,262 @@ paths:
             application/json:
               schema:
                 type: object
+  /joueurs/customisation/options:
+    get:
+      summary: Options de customisation physique
+      tags:
+        - Joueurs
+      responses:
+        '200':
+          description: Options disponibles pour personnaliser l'apparence
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sexes:
+                    type: array
+                    items:
+                      type: string
+                  tailles:
+                    type: array
+                    items:
+                      type: string
+                  styles_cheveux:
+                    type: array
+                    items:
+                      type: string
+                  couleurs_predefinies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        r:
+                          type: integer
+                        g:
+                          type: integer
+                        b:
+                          type: integer
+  /joueurs/jobs:
+    get:
+      summary: Jobs de départ disponibles
+      tags:
+        - Joueurs
+      responses:
+        '200':
+          description: Liste des 5 jobs de base sélectionnables
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        nom:
+                          type: string
+                        description:
+                          type: string
+                        stats_principales:
+                          type: array
+                          items:
+                            type: string
+  /joueurs/jobs/{job_id}:
+    get:
+      summary: Détails d'un job
+      tags:
+        - Joueurs
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Informations complètes d'un job spécifique
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Job non trouvé
+  /joueurs/create:
+    post:
+      summary: Créer un joueur personnalisé
+      tags:
+        - Joueurs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom:
+                  type: string
+                apparence:
+                  type: object
+                  properties:
+                    sexe:
+                      type: string
+                      enum: [masculin, feminin, autre]
+                    taille:
+                      type: string
+                      enum: [petite, moyenne, grande]
+                    couleur_peau:
+                      type: object
+                      properties:
+                        r:
+                          type: integer
+                        g:
+                          type: integer
+                        b:
+                          type: integer
+                    couleur_cheveux:
+                      type: object
+                      properties:
+                        r:
+                          type: integer
+                        g:
+                          type: integer
+                        b:
+                          type: integer
+                    couleur_yeux:
+                      type: object
+                      properties:
+                        r:
+                          type: integer
+                        g:
+                          type: integer
+                        b:
+                          type: integer
+                    style_cheveux:
+                      type: string
+                    style_barbe:
+                      type: string
+                    tatouages:
+                      type: array
+                      items:
+                        type: object
+                    cicatrices:
+                      type: array
+                      items:
+                        type: object
+                job_initial:
+                  type: string
+                  enum: [guerrier, mage, archer, voleur, clerc]
+      responses:
+        '201':
+          description: Joueur créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Données invalides
+  /joueurs/{joueur_id}/competences/assigner:
+    post:
+      summary: Assigner une compétence à un slot
+      tags:
+        - Joueurs
+      parameters:
+        - name: joueur_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [actif, passif, reaction, support]
+                slot_index:
+                  type: integer
+                competence_id:
+                  type: string
+      responses:
+        '200':
+          description: Compétence assignée
+        '501':
+          description: Non implémenté (nécessite BDD externe)
+  /joueurs/{joueur_id}/competences/{type}/{slot}:
+    delete:
+      summary: Retirer une compétence d'un slot
+      tags:
+        - Joueurs
+      parameters:
+        - name: joueur_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [actif, passif, reaction, support]
+        - name: slot
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Compétence retirée
+        '501':
+          description: Non implémenté (nécessite BDD externe)
+  /joueurs/{joueur_id}/competences:
+    get:
+      summary: Obtenir les compétences d'un joueur
+      tags:
+        - Joueurs
+      parameters:
+        - name: joueur_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Compétences du joueur
+        '501':
+          description: Non implémenté (nécessite BDD externe)
+  /joueurs/{joueur_id}/jobs/changer:
+    post:
+      summary: Changer le job d'un joueur
+      tags:
+        - Joueurs
+      parameters:
+        - name: joueur_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nouveau_job:
+                  type: string
+      responses:
+        '200':
+          description: Job changé
+        '501':
+          description: Non implémenté (nécessite BDD externe)
   /ping:
     get:
       summary: Vérifier l'état du serveur

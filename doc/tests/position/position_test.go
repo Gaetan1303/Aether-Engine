@@ -3,8 +3,9 @@
 package position_test
 
 import (
-	pos "aether-engine-server/internal/shared/domain/position"
 	"testing"
+
+	pos "github.com/aether-engine/aether-engine/internal/shared/domain"
 )
 
 func TestNewPosition3D_InvalidCoordinates(t *testing.T) {
@@ -19,7 +20,7 @@ func TestNewPosition3D_InvalidCoordinates(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, err := pos.New(tc.x, tc.y, tc.z); err == nil {
+			if _, err := pos.NewPosition(tc.x, tc.y); err == nil {
 				t.Fatalf("Expected error for %s, but got nil", tc.name)
 			}
 		})

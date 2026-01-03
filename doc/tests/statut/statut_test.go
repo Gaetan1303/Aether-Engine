@@ -1,8 +1,9 @@
 package domain_test
 
 import (
-	"aether-engine-server/internal/combat/domain"
 	"testing"
+
+	"github.com/aether-engine/aether-engine/internal/combat/domain"
 
 	"github.com/stretchr/testify/assert"
 )

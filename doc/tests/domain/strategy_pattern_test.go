@@ -87,7 +87,7 @@ func TestStrategyPattern_MagicalDamage(t *testing.T) {
 func TestStrategyPattern_FixedDamage(t *testing.T) {
 	// Arrange
 	statsAttacker, _ := shared.NewStats(100, 50, 50, 50, 10, 20, 10, 10, 5, 80)
-	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 99, 10, 99, 10, 5) // DEF/MDEF énormes
+	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 99, 10, 99, 10, 5, 85) // DEF/MDEF énormes
 	positionA, _ := shared.NewPosition(0, 0)
 	positionD, _ := shared.NewPosition(1, 0)
 
@@ -145,7 +145,7 @@ func TestStrategyPattern_HybridDamage(t *testing.T) {
 func TestStrategyPattern_ProportionalDamage(t *testing.T) {
 	// Arrange
 	statsAttacker, _ := shared.NewStats(100, 50, 50, 40, 10, 40, 10, 10, 5, 80)
-	statsDefender, _ := shared.NewStats(1000, 50, 50, 10, 20, 10, 20, 10, 5) // 1000 HP
+	statsDefender, _ := shared.NewStats(1000, 50, 50, 10, 20, 10, 20, 10, 5, 85) // 1000 HP
 	positionA, _ := shared.NewPosition(0, 0)
 	positionD, _ := shared.NewPosition(1, 0)
 
@@ -252,8 +252,8 @@ func TestStrategyPattern_Factory(t *testing.T) {
 // TestStrategyPattern_MinimumDamage teste que les dégâts ne descendent jamais sous 1
 func TestStrategyPattern_MinimumDamage(t *testing.T) {
 	// Arrange: Défenseur avec DEF/MDEF énormes
-	statsAttacker, _ := shared.NewStats(100, 50, 50, 10, 10, 10, 10, 10, 5)   // ATK/MATK faibles
-	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 999, 10, 999, 10, 5) // DEF/MDEF énormes
+	statsAttacker, _ := shared.NewStats(100, 50, 50, 10, 10, 10, 10, 10, 5, 85)   // ATK/MATK faibles
+	statsDefender, _ := shared.NewStats(100, 50, 50, 10, 999, 10, 999, 10, 5, 85) // DEF/MDEF énormes
 	positionA, _ := shared.NewPosition(0, 0)
 	positionD, _ := shared.NewPosition(1, 0)
 

@@ -4,8 +4,6 @@ package stats_test
 
 import (
 	"testing"
-
-	"aether-engine-server/internal/shared/domain/stats" // Assurez-vous que le chemin est correct
 )
 
 // NOTE: Suppose que NewStats(maxHP, maxMP, ATK, DEF, SPD, MAG, RES) est la signature.
