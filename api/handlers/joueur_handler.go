@@ -1,9 +1,9 @@
 package handlers
 
 import (
+	joueurService "github.com/aether-engine/aether-engine/internal/joueur/application/service"
 	"github.com/aether-engine/aether-engine/internal/joueur/domain"
 	repo "github.com/aether-engine/aether-engine/internal/joueur/infrastructure/repository"
-	joueurService "github.com/aether-engine/aether-engine/internal/joueur/application/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,19 +41,19 @@ func (h *JoueurHandler) RegisterRoutes(router *gin.RouterGroup) {
 		joueurs.GET("/jobs/:job_id", h.GetJobDetails)
 
 		// CRUD complet avec service layer
-		joueurs.POST("/", h.CreateJoueur)          // RESTful : POST sur collection
-		joueurs.GET("/", h.GetAllJoueurs)          // RESTful : GET collection
-		joueurs.GET("/:id", h.GetJoueur)           // RESTful : GET resource
-		joueurs.PUT("/:id", h.UpdateJoueur)        // RESTful : PUT resource
-		joueurs.DELETE("/:id", h.DeleteJoueur)     // RESTful : DELETE resource
+		joueurs.POST("/", h.CreateJoueur)      // RESTful : POST sur collection
+		joueurs.GET("/", h.GetAllJoueurs)      // RESTful : GET collection
+		joueurs.GET("/:id", h.GetJoueur)       // RESTful : GET resource
+		joueurs.PUT("/:id", h.UpdateJoueur)    // RESTful : PUT resource
+		joueurs.DELETE("/:id", h.DeleteJoueur) // RESTful : DELETE resource
 
-		// Gestion des compétences
-		joueurs.POST("/:joueur_id/competences/assigner", h.AssignerCompetence)
-		joueurs.DELETE("/:joueur_id/competences/:type/:slot", h.RetirerCompetence)
-		joueurs.GET("/:joueur_id/competences", h.GetCompetencesJoueur)
+		// Gestion des compétences - utiliser :id au lieu de :joueur_id pour éviter conflit
+		joueurs.POST("/:id/competences/assigner", h.AssignerCompetence)
+		joueurs.DELETE("/:id/competences/:type/:slot", h.RetirerCompetence)
+		joueurs.GET("/:id/competences", h.GetCompetencesJoueur)
 
 		// Changement de job
-		joueurs.POST("/:joueur_id/jobs/changer", h.ChangerJob)
+		joueurs.POST("/:id/jobs/changer", h.ChangerJob)
 
 		// Endpoints legacy (deprecated mais conservés pour compatibilité)
 		joueurs.POST("/create", h.CreateJoueurLegacy)

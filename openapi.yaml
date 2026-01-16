@@ -1,17 +1,21 @@
 openapi: 3.0.3
 info:
   title: Aether Engine API
-  description: API REST pour la gestion des combats tactiques tour par tour et création de joueurs personnalisés avec WebSocket temps réel
-  version: 3.0.0-MVP
+  description: API REST complète pour les combats tactiques tour par tour, création de joueurs personnalisés et gestion de parties en temps réel
+  version: 2.0.0
 servers:
   - url: http://localhost:8080/aether/v1
-    description: Serveur de développement local
+    description: API principale
+  - url: http://localhost:8080
+    description: Endpoints système (ping, swagger)
 paths:
-  # ===== HEALTH CHECK =====
+  # ===== PING (accessible sur http://localhost:8080/ping) =====
   /ping:
     get:
       summary: Vérifier l'état du serveur
       tags: [System]
+      servers:
+        - url: http://localhost:8080
       responses:
         '200':
           description: Serveur opérationnel
@@ -181,20 +185,135 @@ paths:
         '404':
           description: Personnage non trouvé
 
-  # Endpoint legacy pour compatibilité
+  # Endpoint legacy maintenu pour compatibilité
   /joueurs/create:
     post:
-      summary: Créer un personnage (deprecated)
-      description: Endpoint legacy - Utiliser POST /joueurs à la place
-      deprecated: true
+      summary: Créer un personnage (Legacy - mais fonctionnel)
+      description: Endpoint legacy qui fonctionne - crée un personnage avec customisation complète
       tags: [Joueurs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoueurCreateDTO'
       responses:
-        '301':
-          description: Redirection vers le nouvel endpoint
+        '201':
+          description: Personnage créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoueurResponseDTO'
+        '400':
+          description: Données invalides
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  # ===== GESTION DES COMPÉTENCES =====
+  /joueurs/{id}/competences/assigner:
+    post:
+      summary: Assigner une compétence à un slot
+      tags: [Joueurs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [actif, passif, reaction, support]
+                slot_index:
+                  type: integer
+                competence_id:
+                  type: string
+      responses:
+        '200':
+          description: Compétence assignée
+        '501':
+          description: Non implémenté (nécessite BDD externe)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /joueurs/{id}/competences/{type}/{slot}:
+    delete:
+      summary: Retirer une compétence d'un slot
+      tags: [Joueurs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [actif, passif, reaction, support]
+        - name: slot
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Compétence retirée
+        '501':
+          description: Non implémenté (nécessite BDD externe)
+
+  /joueurs/{id}/competences:
+    get:
+      summary: Obtenir les compétences d'un joueur
+      tags: [Joueurs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Compétences du joueur
+        '501':
+          description: Non implémenté (nécessite BDD externe)
+
+  /joueurs/{id}/jobs/changer:
+    post:
+      summary: Changer le job d'un joueur
+      tags: [Joueurs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nouveau_job:
+                  type: string
+                  enum: [guerrier, mage, archer, voleur, clerc]
+      responses:
+        '200':
+          description: Job changé
+        '501':
+          description: Non implémenté (nécessite BDD externe)
 
   # ===== GAMEPLAY =====
   /game/combat/start:
@@ -320,10 +439,10 @@ paths:
         '400':
           description: Combat ID required or upgrade failed
 
-  # ===== COMBATS (Ancien système) =====
+  # ===== COMBATS =====
   /combats:
     post:
-      summary: Démarrer un nouveau combat (système direct)
+      summary: Démarrer un nouveau combat
       tags: [Combats]
       requestBody:
         required: true
@@ -341,6 +460,10 @@ paths:
       responses:
         '201':
           description: Combat créé
+          content:
+            application/json:
+              schema:
+                type: object
 
   /combats/{id}:
     get:
@@ -355,6 +478,10 @@ paths:
       responses:
         '200':
           description: État du combat
+          content:
+            application/json:
+              schema:
+                type: object
 
   /combats/{id}/actions:
     post:
@@ -382,6 +509,46 @@ paths:
       responses:
         '200':
           description: Résultat de l'action
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /combats/{id}/tour-suivant:
+    post:
+      summary: Passer au tour suivant
+      tags: [Combats]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tour suivant effectué
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /combats/{id}/terminer:
+    post:
+      summary: Terminer un combat
+      tags: [Combats]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Combat terminé
+          content:
+            application/json:
+              schema:
+                type: object
 
 components:
   schemas:

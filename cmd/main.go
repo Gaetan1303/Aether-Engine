@@ -60,7 +60,7 @@ func main() {
 	}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{
-		"Origin", "Content-Type", "Accept", "Authorization", 
+		"Origin", "Content-Type", "Accept", "Authorization",
 		"Cache-Control", "X-Requested-With",
 	}
 	config.AllowCredentials = true
@@ -79,7 +79,8 @@ func main() {
 	combatHandler := handlers.NewCombatHandler(combatEngine)
 	joueurHandler := handlers.NewJoueurHandler() // Nouveau système
 	wsHandler := handlers.NewWebSocketHandler()  // WebSocket temps réel
-	
+	demoHandler := handlers.NewDemoHandler()     // Démo interactive pour frontend
+
 	// Handler de gameplay (lien joueur <-> combat)
 	gameHandler := handlers.NewGameHandler(joueurHandler.GetJoueurService(), combatEngine)
 
@@ -89,6 +90,7 @@ func main() {
 	joueurHandler.RegisterRoutes(api) // Nouveau système
 	gameHandler.RegisterRoutes(api)   // Gameplay MVP
 	wsHandler.RegisterRoutes(api)     // WebSocket temps réel
+	demoHandler.RegisterRoutes(api)   // Démo interactive
 
 	// Démarrer le serveur
 	log.Printf("Serveur Fabric démarré sur le port %s", port)
